@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	DefaultShell     = "C:\\Windows\\powershell.exe"
+	DefaultShell     = GetEnviron().Get("COMSPEC", `C:\WINDOWS\System32\cmd.exe`)
 	ShellCommandFlag = "/c"
 )
 

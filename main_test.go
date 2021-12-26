@@ -30,7 +30,11 @@ func (s TestLogStream) Sync() error {
 }
 
 func Test_reboot(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	timeout := 100 * time.Millisecond
+	if runtime.GOOS == "windows" {
+		timeout = 1 * time.Second
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	u, err := user.Current()
@@ -45,12 +49,21 @@ func Test_reboot(t *testing.T) {
 
 	t.Setenv("CONCRON_TEMP_DIR", dir)
 
-	crontabs := []struct {
+	type TestCrontab struct {
 		Path    string
 		Content string
-	}{
-		{"crontab", "@reboot  *  echo hello world > $CONCRON_TEMP_DIR/hello"},
-		{filepath.Join("cron.d", "a"), "@reboot  " + u.Username + "  cat > $CONCRON_TEMP_DIR/a%this%is%A"},
+	}
+	var crontabs []TestCrontab
+	if runtime.GOOS == "windows" {
+		crontabs = []TestCrontab{
+			{"crontab", "@reboot  *  echo hello world>\\%CONCRON_TEMP_DIR\\%/hello"},
+			{filepath.Join("cron.d", "a"), "SHELL=powershell.exe\r\n@reboot  " + u.Username + "  Write-Output \"this`r`nis`r`nA\" | Out-File -FilePath $env:CONCRON_TEMP_DIR/a -Encoding ascii -NoNewline"},
+		}
+	} else {
+		crontabs = []TestCrontab{
+			{"crontab", "@reboot  *  echo hello world > $CONCRON_TEMP_DIR/hello"},
+			{filepath.Join("cron.d", "a"), "@reboot  " + u.Username + "  cat > $CONCRON_TEMP_DIR/a%this%is%A"},
+		}
 	}
 	for _, tt := range crontabs {
 		if err := os.WriteFile(filepath.Join(dir, tt.Path), []byte(tt.Content), 0644); err != nil {
