@@ -5,4 +5,4 @@ if [ "${CONCRON_CRONTAB}" != "" ]; then
     export CONCRON_PATH="${CONCRON_PATH}:CONCRON_CRONTAB"
 fi
 
-exec /usr/bin/concron "$@"
+exec /usr/bin/concron
