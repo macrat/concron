@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <title>Concron</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width; initial-scale=1" />
+        <style>
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    margin: 0;
+    background-color: #eee;
+    color: #333;
+    font-family: monospace;
+}
+header {
+    padding: .2em 1em;
+}
+section {
+    margin: 2em 0;
+}
+h1 {
+    font-size: 120%;
+    font-weight: normal;
+    margin: 0;
+    padding: 0;
+    border-bottom: .1em solid #333;
+}
+.source {
+    display: block;
+    margin: 0 auto;
+    padding: 0 1em;
+    box-sizing: border-box;
+    max-width: 1200px;
+}
+ul {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0 auto;
+    padding: 0;
+    max-width: 1200px;
+}
+li {
+    display: flex;
+    flex-direction: column;
+    flex: 1 0 30em;
+    position: relative;
+    margin: 1em;
+    padding: 1em 5em 1em 1em;
+    box-sizing: border-box;
+    max-width: calc(100% - 2em);
+}
+.schedule {
+    font-size: 130%;
+}
+.user::before {
+    content: '(';
+}
+.user::after {
+    content: ')';
+}
+.command {
+    font-size: inherit;
+    font-weight: normal;
+    margin: .5em 0;
+}
+.command-bin {
+    font-size: 200%;
+}
+.exit-code {
+    position: absolute;
+    right: 1rem;
+    top: 1em;
+}
+.exit-code-number {
+    display: inline-block;
+    font-size: 500%;
+    vertical-align: top;
+    line-height: 0.8;
+}
+.log {
+    background: #333;
+    color: #eee;
+    padding: .5em 1em;
+    overflow: auto;
+    margin: 0 -5em 0 -1em;
+    min-height: 4em;
+    max-height: 20em;
+    flex: 1 1;
+}
+
+.no-task {
+    flex: 1 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.no-task h1 {
+    font-size: 150%;
+}
+        </style>
+    </head>
+
+    <body>
+        <header>
+            <b>Concron</b>
+            <a href="/">status</a>
+            <a href="/metrics">metrics</a>
+            <a href="https://github.com/macrat/concron" rel="noreferrer">docs</a>
+        </header>{{range .Status}}
+        <section>
+            <h1><span class="source">{{.Path}}</span></h1>
+            <ul>{{range .Tasks}}
+                <li>
+                    <div><span class="schedule" title="schedule">{{.ScheduleSpec}}</span>{{if ne .User "*"}} <span class="user" title="username">{{.User}}</span>{{end}}</div>
+                    <div class="timestamp"><span title="last/next time to execute">{{.TimestampStr}}</span>{{if ne .Duration 0}} <span title="execution time">(+{{.DurationStr}})</span>{{end}}</div>
+                    <div class="command" title="command"><span class="command-bin">{{.CommandBin}}</span> {{.CommandArgs}}</div>
+                    <div class="exit-code">exit code = <span class="exit-code-number">{{.ExitCodeStr}}</span></div>
+                    <pre class="log">{{.Log}}</pre>
+                </li>{{end}}
+            </ul>
+        </section>{{else}}
+        <div class="no-task"><h1>No task registered</h1></div>{{end}}
+    </body>
+</html>

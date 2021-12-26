@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <title>Concron</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width; initial-scale=1" />
+        <style>
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    margin: 0;
+    background-color: #eee;
+    color: #333;
+    font-family: monospace;
+}
+header {
+    padding: .2em 1em;
+}
+div {
+    flex: 1 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+h1 {
+    font-size: 150%;
+    font-weight: normal;
+    margin: 0;
+    padding: 0;
+    border-bottom: .1em solid #333;
+}
+        </style>
+    </html>
+
+    <body>
+        <header>
+            <b>Concron</b>
+            <a href="/">status</a>
+            <a href="/metrics">metrics</a>
+            <a href="https://github.com/macrat/concron" rel="noreferrer">docs</a>
+        </header>
+        <div>
+            <h1>{{ . }}</h1>
+        </div>
+    </body>
+</html>
