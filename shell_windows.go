@@ -10,10 +10,9 @@ import (
 	"go.uber.org/zap"
 )
 
-var (
-	DefaultShell     = GetEnviron().Get("COMSPEC", `C:\WINDOWS\System32\cmd.exe`)
-	ShellCommandOpts = "/C"
-)
+var DefaultShell = GetEnviron().Get("COMSPEC", `C:\WINDOWS\System32\cmd.exe`)
+
+const DefaultShellOpts = "/C"
 
 // SetUID sets execution user to exec.Cmd.
 // In Windows, this function doesn't set user.

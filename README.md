@@ -52,14 +52,19 @@ $ crontab
 
 ## Crontab
 
-Concron search crontab files from `/etc/crontab` or under the `/etc/cron.d`.
+Concron searches crontab files from `/etc/crontab` or under the `/etc/cron.d`.
+These path is specified by `CONCRON_PATH` environment variable.
 In the container, you can also use `CONCRON_CRONTAB` environment variable instead of file.
+
+In Windows, Concron searches `C:\crontab`, `C:\cron.d`, `C:\%USERPROFILE%\crontab`, and `C:\%USERPROFILE%\cron.d`.
+
+Crontab file is like below.
 
 ``` crontab
 SHELL=/bin/sh
 CRON_TZ=Asia/Tokyo
 
-#   schedule      user        command
+#    schedule     user        command
 # |------------| |----| |-----------------|
    */10 * * * *   root   echo your-command
 
@@ -79,6 +84,19 @@ You can change shell using `SHELL` and `SHELL_OPTS`.
 
 ## Dashboard
 
-You can see dashbord on <http://localhost:8000> in default.
+You can see dashboard on <http://localhost:8000> in default.
+The listen address can change using `CONCRON_LISTEN` environment variable.
 
 ![dashboard example](./assets/dashboard.jpg)
+
+
+## Metrics and Logging
+
+The metrics for Prometheus in the OpenMetrics format is on <http://localhost:8000/metrics>.
+This listen address can change using `CONCRON_LISTEN` environment variable as the same as the address of dashboard.
+
+In default, log level set to `info`.
+If you want get more information, please set `debug` to `CONCRON_LOGLEVEL`. Or, you can set `warn` or `error` to suppress log.
+
+The Concron only writes log to the stdout.
+Please collect them using container engine's log collector or something.

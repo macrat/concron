@@ -73,9 +73,13 @@ func Test_reboot(t *testing.T) {
 
 	LogStream = TestLogStream{t}
 
-	startServer(ctx, "localhost:8080", []string{
-		filepath.Join(dir, "crontab"),
-		filepath.Join(dir, "cron.d"),
+	startServer(ctx, Environ{
+		"CONCRON_LOGLEVEL=debug",
+		"CONCRON_LISTEN=localhost:8080",
+		"CONCRON_PATH=" + strings.Join([]string{
+			filepath.Join(dir, "crontab"),
+			filepath.Join(dir, "cron.d"),
+		}, string(filepath.ListSeparator)),
 	})
 
 	outputs := []struct {

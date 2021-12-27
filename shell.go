@@ -9,7 +9,7 @@ import (
 
 // ShellOpts gets SHELL_OPTS from Environ and parses it.
 func ShellOpts(env Environ) []string {
-	raw := env.GetAllowEmpty("SHELL_OPTS", ShellCommandOpts)
+	raw := env.GetAllowEmpty("SHELL_OPTS", DefaultShellOpts)
 	opts, err := shlex.Split(raw)
 	if err != nil {
 		return []string{raw}

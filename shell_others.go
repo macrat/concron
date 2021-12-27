@@ -12,9 +12,9 @@ import (
 	"go.uber.org/zap"
 )
 
-var (
+const (
 	DefaultShell     = "/bin/sh"
-	ShellCommandOpts = "-c"
+	DefaultShellOpts = "-c"
 )
 
 // SetUID sets execution user to exec.Cmd.

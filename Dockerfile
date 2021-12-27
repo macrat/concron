@@ -9,7 +9,7 @@ COPY . .
 ARG VERSION=HEAD
 ARG COMMIT=unknown
 
-RUN CGO_ENABLED=0 make VERSION=$VERSION COMMIT=$COMMIT
+RUN CGO_ENABLED=0 make VERSION=$VERSION COMMIT=$COMMIT DEFAULT_LISTEN=:80
 
 RUN apt update && apt install -y upx && upx --lzma /usr/src/concron/concron
 
