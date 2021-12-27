@@ -73,7 +73,7 @@ func Test_reboot(t *testing.T) {
 
 	LogStream = TestLogStream{t}
 
-	startServer(ctx, ":8080", []string{
+	startServer(ctx, "localhost:8080", []string{
 		filepath.Join(dir, "crontab"),
 		filepath.Join(dir, "cron.d"),
 	})

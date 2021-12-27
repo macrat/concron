@@ -115,29 +115,28 @@ func TestTask_Run(t *testing.T) {
 		ExitCode int
 	}
 
-	tests := []RunTest{
-		{"*  echo hello world", Environ{}, "hello world\n", 0},
-		{"*  exit 1", Environ{}, "", 1},
-	}
+	var tests []RunTest
 
 	if runtime.GOOS == "windows" {
-		tests = append(
-			tests,
-			RunTest{"*  echo hello %someone%", Environ{"someone=world"}, "hello world\r\n", 0},
-			RunTest{"*  echo %USER%:%LOGNAME%", Environ{}, u.Username + ":" + u.Username + "\r\n", 0},
-			RunTest{"*  pwd", Environ{"HOME=C:\\"}, "C:\\\r\n", 0},
-			RunTest{u.Username + "  pwd", Environ{}, u.HomeDir + "\r\n", 0},
-			RunTest{"*  echo $env:SHELL", Environ{"SHELL=powershell.exe"}, "powershell.exe\r\n", 0},
-		)
+		tests = []RunTest{
+			{"*  @echo hello world", Environ{}, "hello world\r\n", 0},
+			{"*  @exit 1", Environ{}, "", 1},
+			{"*  @echo hello \\%SOMEONE\\%", Environ{"SOMEONE=world"}, "hello world\r\n", 0},
+			{"*  @echo \\%USER\\% \\%LOGNAME\\%", Environ{}, u.Username + " " + u.Username + "\r\n", 0},
+			{"*  @cd", Environ{"HOME=C:\\"}, "C:\\\r\n", 0},
+			{u.Username + "  @cd", Environ{}, u.HomeDir + "\r\n", 0},
+			{"*  echo $env:SHELL", Environ{"SHELL=powershell.exe"}, "powershell.exe\r\n", 0},
+		}
 	} else {
-		tests = append(
-			tests,
-			RunTest{"*  echo hello $someone", Environ{"someone=world"}, "hello world\n", 0},
-			RunTest{"*  echo $USER:$LOGNAME", Environ{}, u.Username + ":" + u.Username + "\n", 0},
-			RunTest{"*  pwd", Environ{"HOME=/"}, "/\n", 0},
-			RunTest{u.Username + "  pwd", Environ{}, u.HomeDir + "\n", 0},
-			RunTest{"*  {printf \"hello \\%s\\n\", $1}%awk%", Environ{"SHELL=awk", "SHELL_OPTS="}, "hello awk\n", 0},
-		)
+		tests = []RunTest{
+			{"*  echo hello world", Environ{}, "hello world\n", 0},
+			{"*  exit 1", Environ{}, "", 1},
+			{"*  echo hello $someone", Environ{"someone=world"}, "hello world\n", 0},
+			{"*  echo $USER:$LOGNAME", Environ{}, u.Username + ":" + u.Username + "\n", 0},
+			{"*  pwd", Environ{"HOME=/"}, "/\n", 0},
+			{u.Username + "  pwd", Environ{}, u.HomeDir + "\n", 0},
+			{"*  {printf \"hello \\%s\\n\", $1}%awk%", Environ{"SHELL=awk", "SHELL_OPTS="}, "hello awk\n", 0},
+		}
 	}
 
 	for _, tt := range tests {
