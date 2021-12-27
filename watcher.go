@@ -74,6 +74,7 @@ func (w *CrontabWatcher) load(ctx context.Context, onReboot bool) error {
 		l.Debug(
 			"load",
 			zap.String("schedule", t.ScheduleSpec),
+			zap.String("user", t.User),
 			zap.String("command", t.Command),
 			zap.String("stdin", t.Stdin),
 		)

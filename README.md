@@ -72,6 +72,10 @@ But there is single difference; you can use `*` as username that means execute o
 The container has users that have the same name as UID, 1000 to 1010.
 So you can use specify UID in crontab like `1000` as user name.
 
+In default, Concron execute command using `/bin/sh -c` in Unix, `%COMSPEC% /C` in Windows.
+You can change shell using `SHELL` and `SHELL_OPTS`.
+`SHELL` is `/bin/sh` or `%COMSPEC%` part, and `SHELL_OPTS` is `-c` or `/C` part.
+
 
 ## Dashboard
 

@@ -1,7 +1,13 @@
 package main
 
 import (
+	"bytes"
+	"context"
+	"io"
+	"os/user"
+	"runtime"
 	"testing"
+	"time"
 )
 
 func TestParseTask(t *testing.T) {
@@ -78,6 +84,84 @@ func TestParseCommand(t *testing.T) {
 
 			if stdin != tt.Stdin {
 				t.Errorf("expected stdin %q but got %q", tt.Stdin, stdin)
+			}
+		})
+	}
+}
+
+type TestTaskReporter struct {
+	Output   bytes.Buffer
+	ExitCode int
+	Err      error
+}
+
+func (r *TestTaskReporter) StartTask(t Task) (finish func(int, error), stdout, stderr io.Writer) {
+	return func(exitCode int, err error) {
+		r.ExitCode = exitCode
+		r.Err = err
+	}, &r.Output, &r.Output
+}
+
+func TestTask_Run(t *testing.T) {
+	u, err := user.Current()
+	if err != nil {
+		t.Fatalf("failed to get current user info: %s", err)
+	}
+
+	type RunTest struct {
+		Input    string
+		Env      Environ
+		Output   string
+		ExitCode int
+	}
+
+	tests := []RunTest{
+		{"*  echo hello world", Environ{}, "hello world\n", 0},
+		{"*  exit 1", Environ{}, "", 1},
+	}
+
+	if runtime.GOOS == "windows" {
+		tests = append(
+			tests,
+			RunTest{"*  echo hello %someone%", Environ{"someone=world"}, "hello world\r\n", 0},
+			RunTest{"*  echo %USER%:%LOGNAME%", Environ{}, u.Username + ":" + u.Username + "\r\n", 0},
+			RunTest{"*  pwd", Environ{"HOME=C:\\"}, "C:\\\r\n", 0},
+			RunTest{u.Username + "  pwd", Environ{}, u.HomeDir + "\r\n", 0},
+			RunTest{"*  echo $env:SHELL", Environ{"SHELL=powershell.exe"}, "powershell.exe\r\n", 0},
+		)
+	} else {
+		tests = append(
+			tests,
+			RunTest{"*  echo hello $someone", Environ{"someone=world"}, "hello world\n", 0},
+			RunTest{"*  echo $USER:$LOGNAME", Environ{}, u.Username + ":" + u.Username + "\n", 0},
+			RunTest{"*  pwd", Environ{"HOME=/"}, "/\n", 0},
+			RunTest{u.Username + "  pwd", Environ{}, u.HomeDir + "\n", 0},
+			RunTest{"*  {printf \"hello \\%s\\n\", $1}%awk%", Environ{"SHELL=awk", "SHELL_OPTS="}, "hello awk\n", 0},
+		)
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.Input, func(t *testing.T) {
+			t.Parallel()
+
+			task, err := ParseTask("test", "@reboot "+tt.Input, tt.Env)
+			if err != nil {
+				t.Fatalf("failed to parse task: %s", err)
+			}
+
+			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+			defer cancel()
+
+			var r TestTaskReporter
+			task.Job(ctx, &r).Run()
+
+			if r.Output.String() != tt.Output {
+				t.Errorf("unexpected output\nexpected: %q\n but got: %q", tt.Output, r.Output)
+			}
+
+			if r.ExitCode != tt.ExitCode {
+				t.Errorf("unexpected exit code: expected %d but got %d", tt.ExitCode, r.ExitCode)
 			}
 		})
 	}

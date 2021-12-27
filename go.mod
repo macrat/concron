@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/dustin/go-humanize v1.0.0
+	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/prometheus/client_golang v1.11.0
 	github.com/robfig/cron/v3 v3.0.1
 	go.uber.org/zap v1.19.1

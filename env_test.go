@@ -71,32 +71,45 @@ func TestEnviron(t *testing.T) {
 		}
 	}
 
+	assertEmpty := func(key, want string) {
+		t.Helper()
+
+		if actual := env.GetAllowEmpty(key, noSuchVariable); actual != want {
+			t.Errorf("Get(%q) expected %q but got %q", key, want, actual)
+		}
+	}
+
 	assert("hello", noSuchVariable)
 	assert("foo", noSuchVariable)
 
-	env.Add("hello=world")
+	env.Set("hello=world")
 	assert("hello", "world")
+	assertEmpty("hello", "world")
 
-	env.Add("foo = bar ")
+	env.Set("foo = bar ")
 	assert("hello", "world")
 	assert("foo", "bar")
 
-	env.Add("foo = \" bar \" ")
+	env.Set("foo = \" bar \" ")
 	assert("hello", "world")
 	assert("foo", " bar ")
 
-	env.Add("hello=\"cron\\nworld\"")
+	env.Set("hello=\"cron\\nworld\"")
 	assert("hello", "cron\nworld")
 	assert("foo", " bar ")
 
-	env.Add("in valid=hello")
+	env.Set("in valid=hello")
 	assert("in valid", noSuchVariable)
 
-	env.Add("hello=")
+	env.Set("hello=")
 	assert("hello", noSuchVariable)
 	assert("foo", " bar ")
+	assertEmpty("hello", "")
+	assertEmpty("foo", " bar ")
 
-	env.Add("foo = \"\"")
+	env.Set("foo = \"\"")
 	assert("hello", noSuchVariable)
 	assert("foo", noSuchVariable)
+	assertEmpty("hello", "")
+	assertEmpty("foo", "")
 }

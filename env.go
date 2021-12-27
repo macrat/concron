@@ -12,7 +12,14 @@ type Environ []string
 
 // GetEnviron returns current environment variables.
 func GetEnviron() Environ {
-	return Environ(os.Environ())
+	env := Environ(os.Environ())
+
+	// Ignore some variables about path. These only can set by crontab or SetUserEnv func.
+	env.Set("HOME=")
+	env.Set("PWD=")
+	env.Set("OLDPWD=")
+
+	return env
 }
 
 // ParseEnv splits an environment variable to key and value.
@@ -58,9 +65,9 @@ func IsValidKey(s string) bool {
 	return true
 }
 
-// Add adds new variable to Environ.
+// Set sets new variable to Environ.
 // If the Environ has the same key, it will be overridden.
-func (e *Environ) Add(s string) {
+func (e *Environ) Set(s string) {
 	k, v := ParseEnv(s)
 	if k == "" {
 		return
@@ -69,30 +76,31 @@ func (e *Environ) Add(s string) {
 	prefix := k + "="
 	for i := range *e {
 		if strings.HasPrefix((*e)[i], prefix) {
-			if v == "" {
-				*e = append((*e)[:i], (*e)[i+1:]...)
-			} else {
-				(*e)[i] = prefix + v
-			}
+			(*e)[i] = prefix + v
 			return
 		}
 	}
 	*e = append(*e, prefix+v)
 }
 
-// Get returns the value for the specified key from this Environ.
-// If the Environ has no value for the key, it returns the defaultValue.
-func (e Environ) Get(key, defaultValue string) string {
+// GetAllowEmpty is the almost same as Get, but it consider empty value is a value.
+func (e Environ) GetAllowEmpty(key, defaultValue string) string {
 	key = key + "="
 	for _, x := range e {
 		if strings.HasPrefix(x, key) {
-			xs := strings.SplitN(x, "=", 2)
-			if xs[1] == "" {
-				return defaultValue
-			} else {
-				return xs[1]
-			}
+			return strings.SplitN(x, "=", 2)[1]
 		}
 	}
 	return defaultValue
+}
+
+// Get returns the value for the specified key from this Environ.
+// If the Environ has no value for the key, it returns the defaultValue.
+func (e Environ) Get(key, defaultValue string) string {
+	v := e.GetAllowEmpty(key, defaultValue)
+	if v == "" {
+		return defaultValue
+	} else {
+		return v
+	}
 }

@@ -48,7 +48,7 @@ func ParseCrontab(path string, r io.Reader, env Environ) (Crontab, error) {
 			}
 			ct.add(t)
 		case EnvLine:
-			env.Add(line)
+			env.Set(line)
 		case InvalidLine:
 			return Crontab{}, fmt.Errorf("%d: invalid line", ln)
 		}

@@ -14,13 +14,13 @@ import (
 
 var (
 	DefaultShell     = "/bin/sh"
-	ShellCommandFlag = "-c"
+	ShellCommandOpts = "-c"
 )
 
-func SetUID(cmd *exec.Cmd, username string) error {
-	u, err := user.Lookup(username)
-	if err != nil {
-		return err
+// SetUID sets execution user to exec.Cmd.
+func SetUID(cmd *exec.Cmd, u *user.User) error {
+	if cur, err := user.Current(); err == nil && cur.Uid == u.Uid {
+		return nil
 	}
 
 	uid, err := strconv.ParseUint(u.Uid, 10, 32)
@@ -31,10 +31,6 @@ func SetUID(cmd *exec.Cmd, username string) error {
 	gid, err := strconv.ParseUint(u.Gid, 10, 32)
 	if err != nil {
 		return err
-	}
-
-	if cur, err := user.Current(); err == nil && cur.Uid == u.Uid {
-		return nil
 	}
 
 	zap.L().Debug(

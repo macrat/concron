@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"hash/crc64"
+	"io"
 	"os/exec"
 	"strings"
 
@@ -63,20 +64,22 @@ func ParseTask(source string, s string, env Environ) (Task, error) {
 }
 
 // Run runs the task.
-func (t Task) Run(ctx context.Context, sm *StatusManager) {
+func (t Task) Run(ctx context.Context, sm TaskReporter) {
 	finish, stdout, stderr := sm.StartTask(t)
 
-	cmd := exec.CommandContext(ctx, t.Env.Get("SHELL", DefaultShell), t.Env.Get("SHELL_FLAG", ShellCommandFlag), t.Command)
+	cmd := exec.CommandContext(
+		ctx,
+		t.Env.Get("SHELL", DefaultShell),
+		append(ShellOpts(t.Env), t.Command)...,
+	)
 	cmd.Stdin = strings.NewReader(t.Stdin)
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
 	cmd.Env = []string(t.Env)
 
-	if t.User != "*" {
-		if err := SetUID(cmd, t.User); err != nil {
-			finish(-1, err)
-			return
-		}
+	if err := SetUserInfo(cmd, t.User); err != nil {
+		finish(-1, err)
+		return
 	}
 
 	err := cmd.Run()
@@ -84,7 +87,7 @@ func (t Task) Run(ctx context.Context, sm *StatusManager) {
 }
 
 // Job returns cron.Job
-func (t Task) Job(ctx context.Context, sm *StatusManager) cron.Job {
+func (t Task) Job(ctx context.Context, sm TaskReporter) cron.Job {
 	return cron.FuncJob(func() {
 		t.Run(ctx, sm)
 	})
@@ -169,4 +172,8 @@ func ParseCommand(s string) (command, stdin string) {
 	command = strings.ReplaceAll(command, "\\%", "%")
 	stdin = strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(stdin, "\\%", "\r"), "%", "\n"), "\r", "%")
 	return
+}
+
+type TaskReporter interface {
+	StartTask(t Task) (finish func(exitCode int, err error), stdout, stderr io.Writer)
 }
