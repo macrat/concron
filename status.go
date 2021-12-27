@@ -143,7 +143,9 @@ func (sm *StatusManager) setCrontabStatus(path string, cs *CrontabStatus) (delet
 	if ct, ok := sm.crontab[path]; ok {
 		deleted = ct
 		for _, t := range ct.Tasks {
-			delete(sm.task, t.ID)
+			if !t.IsReboot {
+				delete(sm.task, t.ID)
+			}
 		}
 	}
 	if cs != nil {
