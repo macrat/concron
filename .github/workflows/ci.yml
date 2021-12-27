@@ -79,7 +79,15 @@ jobs:
           images: ghcr.io/macrat/concron
           flavor: |
             latest=false
-            prefix=busybox-
+          tags: |
+            type=ref,event=branch,prefix=busybox-
+            type=ref,event=pr,prefix=busybox-
+            type=semver,pattern={{version}},prefix=busybox-
+            type=semver,pattern={{major}}.{{minor}},prefix=busybox-
+            type=semver,pattern={{major}},prefix=busybox-
+            type=raw,value=busybox,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+          labels: |
+            org.opencontainers.image.description=Cron for Container with busybox.
       - uses: docker/build-push-action@v2
         with:
           push: true
@@ -97,8 +105,20 @@ jobs:
         id: docker
         with:
           images: ghcr.io/macrat/concron
-          flavor: |
-            prefix=docker-
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=ref,event=branch,prefix=docker-
+            type=ref,event=pr,prefix=docker-
+            type=semver,pattern={{version}},prefix=docker-
+            type=semver,pattern={{major}}.{{minor}},prefix=docker-
+            type=semver,pattern={{major}},prefix=docker-
+            type=raw,value=docker,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+          labels: |
+            org.opencontainers.image.description=Cron for Container that includes Docker commands.
       - uses: docker/build-push-action@v2
         with:
           push: true
