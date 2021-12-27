@@ -136,6 +136,19 @@ func TestTask_Run(t *testing.T) {
 			{"*  pwd", Environ{"HOME=/"}, "/\n", 0},
 			{u.Username + "  pwd", Environ{}, u.HomeDir + "\n", 0},
 			{"*  {printf \"hello \\%s\\n\", $1}%awk%", Environ{"SHELL=awk", "SHELL_OPTS="}, "hello awk\n", 0},
+			{"*  10 13", Environ{"SHELL=seq", "SHELL_OPTS=", "PARSE_COMMAND=yes"}, "10\n11\n12\n13\n", 0},
+		}
+		switch runtime.GOOS {
+		case "linux":
+			tests = append(
+				tests,
+				RunTest{"*  10 14", Environ{"SHELL=seq", "SHELL_OPTS=", "PARSE_COMMAND=no"}, "seq: invalid floating point argument: '10 14'\nTry 'seq --help' for more information.\n", 1},
+			)
+		case "darwin":
+			tests = append(
+				tests,
+				RunTest{"*  10 14", Environ{"SHELL=seq", "SHELL_OPTS=", "PARSE_COMMAND=no"}, "seq: invalid floating point argument: 10 14\n", 2},
+			)
 		}
 	}
 

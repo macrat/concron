@@ -104,3 +104,14 @@ func (e Environ) Get(key, defaultValue string) string {
 		return v
 	}
 }
+
+// GetBool gets boolean value from the Environ.
+func (e Environ) GetBool(key string) bool {
+	v := e.Get(key, "")
+	switch strings.ToLower(v) {
+	case "true", "1", "yes", "enable":
+		return true
+	default:
+		return false
+	}
+}

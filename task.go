@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/google/shlex"
 	"github.com/robfig/cron/v3"
 )
 
@@ -67,10 +68,17 @@ func ParseTask(source string, s string, env Environ) (Task, error) {
 func (t Task) Run(ctx context.Context, sm TaskReporter) {
 	finish, stdout, stderr := sm.StartTask(t)
 
+	args := []string{t.Command}
+	if t.Env.GetBool("PARSE_COMMAND") {
+		if a, err := shlex.Split(t.Command); err == nil {
+			args = a
+		}
+	}
+
 	cmd := exec.CommandContext(
 		ctx,
 		t.Env.Get("SHELL", DefaultShell),
-		append(ShellOpts(t.Env), t.Command)...,
+		append(ShellOpts(t.Env), args...)...,
 	)
 	cmd.Stdin = strings.NewReader(t.Stdin)
 	cmd.Stdout = stdout

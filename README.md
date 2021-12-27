@@ -77,9 +77,28 @@ But there is single difference; you can use `*` as username that means execute o
 The container has users that have the same name as UID, 1000 to 1010.
 So you can use specify UID in crontab like `1000` as user name.
 
-In default, Concron execute command using `/bin/sh -c` in Unix, `%COMSPEC% /C` in Windows.
+Concron uses `/bin/sh -c` in Unix, `%COMSPEC% /C` in Windows, to execute command.
 You can change shell using `SHELL` and `SHELL_OPTS`.
 `SHELL` is `/bin/sh` or `%COMSPEC%` part, and `SHELL_OPTS` is `-c` or `/C` part.
+
+In below example, all tasks will executed in the docker container.
+
+``` crontab
+# This is too long and ugly.
+0 0 * * *  *  /usr/bin/docker run --rm busybox echo hello world
+
+
+# Use docker command as a shell.
+SHELL = /usr/bin/docker
+SHELL_OPTS = run --rm
+PARSE_COMMAND = yes
+
+# This is short and cool!
+0 0 * * *  *  busybox echo hello world
+```
+
+When the `PARSE_COMMAND` option in above example is enabled, Concron executes comannd as `"/usr/bin/docker" "run" "--rm" "busybox" "echo" "hello" "world"` instead of `"/usr/bin/docker" "run" "--rm" "busybox echo hello world"`.
+This option is useful if you want to use non-shell program as `SHELL`.
 
 
 ## Dashboard
