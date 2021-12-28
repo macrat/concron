@@ -1,0 +1,39 @@
+version: "3"
+
+services:
+  docker:
+    image: docker:dind
+    privileged: true
+    environment:
+      DOCKER_HOST: unix:///var/run/docker/docker.sock
+    volumes:
+      - dockersocket:/var/run/docker
+    restart: always
+
+  concron:
+    image: ghcr.io/macrat/concron:latest
+    environment:
+      # Path to docker socket
+      DOCKER_HOST: unix:///var/run/docker/docker.sock
+
+      # Timezone to schedule
+      CRON_TZ: Asia/Tokyo
+
+      # Use docker as a shell
+      SHELL: /usr/local/bin/docker
+      SHELL_OPTS: run --rm
+      PARSE_COMMAND: "true"
+
+      # Tasks
+      CONCRON_CRONTAB: |
+        #   schedule  | user | image name  | command
+          */5 * * * *    *     hello-world
+          *   * * * *    *     busybox       date
+    volumes:
+      - dockersocket:/var/run/docker
+    ports:
+      - "8000:80"
+    restart: always
+
+volumes:
+  dockersocket:

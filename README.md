@@ -12,7 +12,7 @@ Concron - Cron for Container
 Place your crontab file to `./crontab`, and run the below command.
 
 ``` shell
-$ docker run -v $(pwd)/crontab:/etc/crontab:ro -p 8080:80 ghcr.io/macrat/concron:latest
+$ docker run -v $(pwd)/crontab:/etc/crontab:ro -p 8000:80 ghcr.io/macrat/concron:latest
 ```
 
 ### via Docker Compose
@@ -38,6 +38,8 @@ services:
 ```
 
 And then, start via `docker-compose up -d` command.
+
+More examples are in [examples directory](./examples).
 
 ### without container
 

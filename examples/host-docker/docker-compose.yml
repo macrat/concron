@@ -1,0 +1,24 @@
+version: "3"
+
+services:
+  concron:
+    image: ghcr.io/macrat/concron:latest
+    environment:
+      # Timezone to schedule
+      CRON_TZ: Asia/Tokyo
+
+      # Use docker as a shell
+      SHELL: /usr/local/bin/docker
+      SHELL_OPTS: run --rm
+      PARSE_COMMAND: "true"
+
+      # Tasks
+      CONCRON_CRONTAB: |
+        #   schedule  | user | image name  | command
+          */5 * * * *    *     hello-world
+          *   * * * *    *     busybox       date
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8000:80"
+    restart: always

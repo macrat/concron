@@ -1,0 +1,17 @@
+version: "3"
+
+services:
+  concron:
+    image: ghcr.io/macrat/concron:busybox
+    environment:
+      # Timezone to schedule
+      CRON_TZ: Asia/Tokyo
+
+      # Tasks
+      CONCRON_CRONTAB: |
+        #   schedule  | user | command
+          */5 * * * *    *     echo hello world
+          *   * * * *    *     date
+    ports:
+      - "8000:80"
+    restart: always
