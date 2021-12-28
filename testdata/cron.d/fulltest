@@ -1,0 +1,18 @@
+# write reboot file when started.
+@reboot    {{.User}}  date +R:\%M:\%S | tee {{.OutputPath}}/reboot
+
+# write minutely-a file every minute until removed this file.
+* * * * *  {{.User}}  date +A:\%M:\%S | tee {{.OutputPath}}/minutely-a
+
+# generate minutely-b crontab after started.
+@reboot    {{.User}}  echo '* * * * *  *  date +B:\\\%M:\\\%S | tee {{.OutputPath}}/minutely-b' | tee {{.CronPath}}/minutely-b
+
+# remove crontab file itself at the first execution.
+* * * * *  {{.User}}  rm {{.CronPath}}/fulltest
+
+
+#                      schedule table
+#
+#            | initial | @reboot | 1min           | 2min        | 3min
+# minutely-a | present |         | work/disappear | work/unload | absent
+# minutely-b | absent  | appear  | load           | work        | work

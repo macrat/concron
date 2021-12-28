@@ -12,3 +12,15 @@ fmt:
 .PHONY: test
 test:
 	go test -cover -race ./...
+
+.PHONY: fulltest
+fulltest:
+	@echo WARNING: fulltest started. it takes very long time.
+	@echo
+	go test -v -cover -race -tags=fulltest ./...
+
+.PHONY: fulltest-only
+fulltest-only:
+	@echo WARNING: fulltest started. it takes very long time.
+	@echo
+	go test -v -cover -race -tags=fulltest -run=fulltest
