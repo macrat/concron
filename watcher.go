@@ -14,8 +14,8 @@ import (
 type CrontabWatcher struct {
 	sync.Mutex
 
-	Path          string
-	StatusManager *StatusManager
+	Path    string
+	Monitor *StatusMonitor
 
 	cron        *cron.Cron
 	modtime     time.Time
@@ -24,11 +24,11 @@ type CrontabWatcher struct {
 	observeTask cron.EntryID
 }
 
-func NewCrontabWatcher(ctx context.Context, c *cron.Cron, sm *StatusManager, path string, onReboot bool) (*CrontabWatcher, error) {
+func NewCrontabWatcher(ctx context.Context, c *cron.Cron, sm *StatusMonitor, path string, onReboot bool) (*CrontabWatcher, error) {
 	w := &CrontabWatcher{
-		Path:          path,
-		StatusManager: sm,
-		cron:          c,
+		Path:    path,
+		Monitor: sm,
+		cron:    c,
 	}
 	err := w.load(ctx, onReboot)
 	return w, err
@@ -54,7 +54,7 @@ func (w *CrontabWatcher) load(ctx context.Context, onReboot bool) error {
 	w.Lock()
 	defer w.Unlock()
 
-	finish := w.StatusManager.StartLoad(w.Path)
+	finish := w.Monitor.StartLoad(w.Path)
 
 	ct, modtime, err := w.readCrontab()
 	if err != nil {
@@ -81,10 +81,10 @@ func (w *CrontabWatcher) load(ctx context.Context, onReboot bool) error {
 
 		if t.IsReboot {
 			if onReboot {
-				go t.Run(ctx, w.StatusManager)
+				go t.Run(ctx, w.Monitor)
 			}
 		} else {
-			w.entries = append(w.entries, w.cron.Schedule(t.Schedule, t.Job(ctx, w.StatusManager)))
+			w.entries = append(w.entries, w.cron.Schedule(t.Schedule, t.Job(ctx, w.Monitor)))
 		}
 	}
 
@@ -124,17 +124,9 @@ func (w *CrontabWatcher) Close() error {
 	}
 	w.observeTask = 0
 
-	w.StatusManager.Unloaded(w.Path)
+	w.Monitor.Unloaded(w.Path)
 
 	w.entries = []cron.EntryID{}
 
 	return nil
-}
-
-// IsActive checks if this watcher is active or not.
-func (w *CrontabWatcher) IsActive() bool {
-	w.Lock()
-	defer w.Unlock()
-
-	return w.observeTask > 0
 }

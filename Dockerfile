@@ -20,7 +20,7 @@ WORKDIR /tmp/concron
 
 COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=builder /usr/src/concron/concron /usr/bin/concron
-COPY ./start-concron.sh /start-concron.sh
+COPY ./assets/start-concron.sh /start-concron.sh
 
 RUN for id in `seq 1000 1010`; do adduser -D -u $id -s /sbin/nologin -H -h / -g "" $id; done
 

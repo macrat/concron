@@ -5,7 +5,7 @@ import (
 )
 
 // ReloadSchedule is a cron schedule for crontab checking.
-// This schedule runs on every minute but shifted half a minute.
+// This schedule runs on every minute.
 type ReloadSchedule struct{}
 
 // Next implements cron.Schedule.

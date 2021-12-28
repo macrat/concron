@@ -1,7 +1,10 @@
 package main
 
 import (
+	_ "embed"
+	"html/template"
 	"io"
+	"net/http"
 	"sort"
 	"strconv"
 	"strings"
@@ -10,6 +13,7 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 )
 
@@ -121,22 +125,22 @@ type CrontabStatus struct {
 	Tasks   []Task
 }
 
-// StatusManager collects task running status.
-type StatusManager struct {
+// StatusMonitor collects task running status, and serve status/metrics pages.
+type StatusMonitor struct {
 	sync.Mutex
 
 	crontab map[string]*CrontabStatus
 	task    map[uint64]TaskStatus
 }
 
-func NewStatusManager() *StatusManager {
-	return &StatusManager{
+func NewStatusMonitor() *StatusMonitor {
+	return &StatusMonitor{
 		crontab: make(map[string]*CrontabStatus),
 		task:    make(map[uint64]TaskStatus),
 	}
 }
 
-func (sm *StatusManager) setCrontabStatus(path string, cs *CrontabStatus) (deleted *CrontabStatus) {
+func (sm *StatusMonitor) setCrontabStatus(path string, cs *CrontabStatus) (deleted *CrontabStatus) {
 	sm.Lock()
 	defer sm.Unlock()
 
@@ -157,7 +161,7 @@ func (sm *StatusManager) setCrontabStatus(path string, cs *CrontabStatus) (delet
 
 // StartLoad reports started to loading crontab.
 // This function returns a function to report the loading completed.
-func (sm *StatusManager) StartLoad(path string) func(loaded Crontab, err error) {
+func (sm *StatusMonitor) StartLoad(path string) func(loaded Crontab, err error) {
 	stime := time.Now()
 
 	return func(loaded Crontab, err error) {
@@ -194,7 +198,7 @@ func (sm *StatusManager) StartLoad(path string) func(loaded Crontab, err error) 
 }
 
 // Unloaded reports the crontab unloaded.
-func (sm *StatusManager) Unloaded(path string) {
+func (sm *StatusMonitor) Unloaded(path string) {
 	deleted := sm.setCrontabStatus(path, nil)
 
 	zap.L().Info(
@@ -206,7 +210,7 @@ func (sm *StatusManager) Unloaded(path string) {
 
 // StartTask reports a task has started.
 // This function returns a function to report the task has finished, and io.Writer for logging.
-func (sm *StatusManager) StartTask(t Task) (finish func(exitCode int, err error), stdout, stderr io.Writer) {
+func (sm *StatusMonitor) StartTask(t Task) (finish func(exitCode int, err error), stdout, stderr io.Writer) {
 	sm.Lock()
 	if s, ok := sm.crontab[t.Source]; ok {
 		s.Running++
@@ -312,7 +316,7 @@ type StatusSnapshot struct {
 }
 
 // Status reports the current status and logs.
-func (sm *StatusManager) Status() []StatusSnapshot {
+func (sm *StatusMonitor) Status() []StatusSnapshot {
 	sm.Lock()
 	defer sm.Unlock()
 
@@ -338,4 +342,51 @@ func (sm *StatusManager) Status() []StatusSnapshot {
 	})
 
 	return r
+}
+
+//go:embed templates/status.html
+var statusPageTemplateStr string
+var statusPageTemplate = template.Must(template.New("status.html").Parse(statusPageTemplateStr))
+
+//go:embed templates/errors.html
+var errorPageTemplateStr string
+var errorPageTemplate = template.Must(template.New("errors.html").Parse(errorPageTemplateStr))
+
+//go:embed static/icon.svg
+var iconSvg []byte
+
+// ServeHTTP implements http.Handler.
+func (sm *StatusMonitor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	var err error
+
+	if r.Method != "GET" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		err = errorPageTemplate.Execute(w, "Method not allowed")
+	} else {
+		switch r.URL.Path {
+		case "/favicon.ico":
+			w.Header().Set("Content-Type", "image/svg+xml")
+			_, err = w.Write(iconSvg)
+		case "/metrics":
+			promhttp.Handler().ServeHTTP(w, r)
+		case "/":
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			err = statusPageTemplate.Execute(w, map[string]interface{}{
+				"Status": sm.Status(),
+			})
+		default:
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.WriteHeader(http.StatusNotFound)
+			err = errorPageTemplate.Execute(w, "Not found")
+		}
+	}
+
+	if err != nil {
+		zap.L().Error(
+			"failed to render page",
+			zap.Error(err),
+			zap.String("method", r.Method),
+			zap.String("url", r.URL.String()),
+		)
+	}
 }

@@ -20,14 +20,14 @@ type CrontabCollector struct {
 	// Pathes is candidate file names or directory names.
 	Pathes []string
 
-	StatusManager *StatusManager
+	Monitor *StatusMonitor
 
 	cron       *cron.Cron
 	lastFounds []string
 }
 
 // NewCrontabCollector makes new CrontabCollector.
-func NewCrontabCollector(ctx context.Context, c *cron.Cron, sm *StatusManager, pathes []string) *CrontabCollector {
+func NewCrontabCollector(ctx context.Context, c *cron.Cron, sm *StatusMonitor, pathes []string) *CrontabCollector {
 	for i := range pathes {
 		pathes[i] = filepath.Clean(pathes[i])
 	}
@@ -38,9 +38,9 @@ func NewCrontabCollector(ctx context.Context, c *cron.Cron, sm *StatusManager, p
 	)
 
 	cc := &CrontabCollector{
-		Pathes:        pathes,
-		StatusManager: sm,
-		cron:          c,
+		Pathes:  pathes,
+		Monitor: sm,
+		cron:    c,
 	}
 	cc.searchAndLoad(ctx, true)
 	return cc
@@ -53,7 +53,7 @@ func (c *CrontabCollector) checkFile(ctx context.Context, path string, onReboot 
 		}
 	}
 
-	w, err := NewCrontabWatcher(ctx, c.cron, c.StatusManager, path, onReboot)
+	w, err := NewCrontabWatcher(ctx, c.cron, c.Monitor, path, onReboot)
 	if err != nil {
 		return err
 	}

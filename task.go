@@ -182,6 +182,7 @@ func ParseCommand(s string) (command, stdin string) {
 	return
 }
 
+// TaskReporter is a interface to StatusMonitor.
 type TaskReporter interface {
 	StartTask(t Task) (finish func(exitCode int, err error), stdout, stderr io.Writer)
 }
