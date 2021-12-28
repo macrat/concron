@@ -82,6 +82,7 @@ func init() {
 		fmt.Println("  TZ                  Timezone for scheduling.")
 		fmt.Println("  SHELL               Path to shell to execute command. (default: " + DefaultShell + ")")
 		fmt.Println("  SHELL_OPTS          Path to shell to execute command. (default: " + DefaultShellOpts + ")")
+		fmt.Println("  PARSE_COMMAND       Parse command before pass to shell. \"yes\", \"true\", \"1\", \"enable\" to enable. (default: disable)")
 	}
 }
 
