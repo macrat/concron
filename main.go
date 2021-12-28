@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"os"
 	"path/filepath"
 
 	"github.com/robfig/cron/v3"
@@ -90,6 +91,7 @@ func main() {
 
 	showHelp := flag.Bool("h", false, "Show help and exit.")
 	showVersion := flag.Bool("v", false, "Show version and exit.")
+	flag.CommandLine.SetOutput(os.Stdout)
 	flag.Parse()
 
 	if *showHelp {
