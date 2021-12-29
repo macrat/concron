@@ -8,8 +8,6 @@ import (
 	"os/user"
 	"strconv"
 	"syscall"
-
-	"go.uber.org/zap"
 )
 
 const (
@@ -18,7 +16,7 @@ const (
 )
 
 // SetUID sets execution user to exec.Cmd.
-func SetUID(cmd *exec.Cmd, u *user.User) error {
+func SetUID(_ LoggerHolder, cmd *exec.Cmd, u *user.User) error {
 	if cur, err := user.Current(); err == nil && cur.Uid == u.Uid {
 		return nil
 	}
@@ -32,12 +30,6 @@ func SetUID(cmd *exec.Cmd, u *user.User) error {
 	if err != nil {
 		return err
 	}
-
-	zap.L().Debug(
-		"set uid/gid",
-		zap.Uint64("uid", uid),
-		zap.Uint64("gid", gid),
-	)
 
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Credential: &syscall.Credential{

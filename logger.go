@@ -2,7 +2,6 @@ package main
 
 import (
 	"io"
-	"os"
 	"strings"
 	"time"
 
@@ -10,29 +9,19 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-var (
-	LogStream zapcore.WriteSyncer = os.Stdout
-)
-
-// PrepareLogger makes logger and register to zap.L().
-// This function returns a function to reset logger to default.
-func PrepareLogger(level zapcore.Level) func() {
+// NewLogger makes a new zap.Logger.
+func NewLogger(f zapcore.WriteSyncer, level zapcore.Level) *zap.Logger {
 	conf := zap.NewProductionEncoderConfig()
 	conf.EncodeTime = zapcore.TimeEncoderOfLayout(time.RFC3339)
-	logger := zap.New(zapcore.NewCore(
+	return zap.New(zapcore.NewCore(
 		zapcore.NewJSONEncoder(conf),
-		zapcore.Lock(LogStream),
+		zapcore.Lock(f),
 		level,
 	))
-	undo := zap.ReplaceGlobals(logger)
-	return func() {
-		undo()
-		logger.Sync()
-	}
 }
 
 // CronLogger is a log wrapper for github.com/robfig/cron/v3.
-type CronLogger struct{}
+type CronLogger zap.Logger
 
 func (_ CronLogger) filterFields(kvs []interface{}) []interface{} {
 	rs := []interface{}{}
@@ -45,13 +34,13 @@ func (_ CronLogger) filterFields(kvs []interface{}) []interface{} {
 }
 
 // Info implements cron.Logger.
-func (l CronLogger) Info(msg string, kvs ...interface{}) {
-	zap.L().With(zap.String("task", msg)).Sugar().Debugw("cron", l.filterFields(kvs)...)
+func (l *CronLogger) Info(msg string, kvs ...interface{}) {
+	(*zap.Logger)(l).With(zap.String("task", msg)).Sugar().Debugw("cron", l.filterFields(kvs)...)
 }
 
 // Error implements cron.Logger.
-func (l CronLogger) Error(err error, msg string, kvs ...interface{}) {
-	zap.L().With(zap.String("task", msg), zap.Error(err)).Sugar().Errorw("cron", l.filterFields(kvs)...)
+func (l *CronLogger) Error(err error, msg string, kvs ...interface{}) {
+	(*zap.Logger)(l).With(zap.String("task", msg), zap.Error(err)).Sugar().Errorw("cron", l.filterFields(kvs)...)
 }
 
 // OutputLogger is a logger for hook command output.
@@ -70,10 +59,10 @@ func (l OutputLogger) Write(w []byte) (int, error) {
 }
 
 // NewStdoutLogger makes a new OutputLogger for stdout.
-func NewStdoutLogger(t Task) io.Writer {
+func NewStdoutLogger(l *zap.Logger, t Task) io.Writer {
 	return OutputLogger{
 		"stdout",
-		zap.L().With(
+		l.With(
 			zap.String("source", t.Source),
 			zap.String("schedule", t.ScheduleSpec),
 			zap.String("user", t.User),
@@ -84,10 +73,10 @@ func NewStdoutLogger(t Task) io.Writer {
 }
 
 // NewStderrLogger makes a new OutputLogger for stderr.
-func NewStderrLogger(t Task) io.Writer {
+func NewStderrLogger(l *zap.Logger, t Task) io.Writer {
 	return OutputLogger{
 		"stderr",
-		zap.L().With(
+		l.With(
 			zap.String("source", t.Source),
 			zap.String("schedule", t.ScheduleSpec),
 			zap.String("user", t.User),

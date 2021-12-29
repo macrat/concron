@@ -68,7 +68,7 @@ func (w *CrontabWatcher) load(ctx context.Context, onReboot bool) error {
 
 	w.entries = []cron.EntryID{}
 
-	l := zap.L().With(zap.String("path", w.Path))
+	l := w.Monitor.L().With(zap.String("path", w.Path))
 	l.Debug("loading")
 	for _, t := range ct.Tasks {
 		l.Debug(
@@ -103,7 +103,7 @@ func (w *CrontabWatcher) Register(ctx context.Context) {
 			w.Close()
 			return
 		} else if err != nil {
-			zap.L().Error("failed to check crontab", zap.Error(err))
+			w.Monitor.L().Error("failed to check crontab", zap.Error(err))
 			return
 		}
 

@@ -32,7 +32,7 @@ func NewCrontabCollector(ctx context.Context, c *cron.Cron, sm *StatusMonitor, p
 		pathes[i] = filepath.Clean(pathes[i])
 	}
 
-	zap.L().Info(
+	sm.L().Info(
 		"search crontab",
 		zap.Strings("path", pathes),
 	)
@@ -91,7 +91,7 @@ func (c *CrontabCollector) checkRecursive(ctx context.Context, path string, onRe
 		return nil
 	})
 	if err != nil {
-		zap.L().Warn("search crontab", zap.Error(err))
+		c.Monitor.L().Warn("search crontab", zap.Error(err))
 	}
 
 	return

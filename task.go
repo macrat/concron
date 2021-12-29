@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/shlex"
 	"github.com/robfig/cron/v3"
+	"go.uber.org/zap"
 )
 
 var (
@@ -85,7 +86,7 @@ func (t Task) Run(ctx context.Context, sm TaskReporter) {
 	cmd.Stderr = stderr
 	cmd.Env = []string(t.Env)
 
-	if err := SetUserInfo(cmd, t.User); err != nil {
+	if err := SetUserInfo(sm, cmd, t.User); err != nil {
 		finish(-1, err)
 		return
 	}
@@ -185,4 +186,5 @@ func ParseCommand(s string) (command, stdin string) {
 // TaskReporter is a interface to StatusMonitor.
 type TaskReporter interface {
 	StartTask(t Task) (finish func(exitCode int, err error), stdout, stderr io.Writer)
+	L() *zap.Logger
 }

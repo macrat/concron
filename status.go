@@ -129,15 +129,22 @@ type CrontabStatus struct {
 type StatusMonitor struct {
 	sync.Mutex
 
+	logger  *zap.Logger
 	crontab map[string]*CrontabStatus
 	task    map[uint64]TaskStatus
 }
 
-func NewStatusMonitor() *StatusMonitor {
+func NewStatusMonitor(l *zap.Logger) *StatusMonitor {
 	return &StatusMonitor{
+		logger:  l,
 		crontab: make(map[string]*CrontabStatus),
 		task:    make(map[uint64]TaskStatus),
 	}
+}
+
+// L returns zap.Logger.
+func (sm *StatusMonitor) L() *zap.Logger {
+	return sm.logger
 }
 
 func (sm *StatusMonitor) setCrontabStatus(path string, cs *CrontabStatus) (deleted *CrontabStatus) {
@@ -169,14 +176,16 @@ func (sm *StatusMonitor) StartLoad(path string) func(loaded Crontab, err error) 
 	return func(loaded Crontab, err error) {
 		duration := time.Since(stime)
 
+		// reset all user's tasks to 0.
 		for _, t := range loaded.Tasks {
 			loadedTaskGauge.WithLabelValues(path, t.User).Set(0)
 		}
+		// count how many tasks per user are there.
 		for _, t := range loaded.Tasks {
 			loadedTaskGauge.WithLabelValues(path, t.User).Inc()
 		}
 
-		l := zap.L().With(
+		l := sm.logger.With(
 			zap.String("path", path),
 			zap.Duration("duration", duration),
 			zap.Int("tasks", len(loaded.Tasks)),
@@ -203,7 +212,7 @@ func (sm *StatusMonitor) StartLoad(path string) func(loaded Crontab, err error) 
 func (sm *StatusMonitor) Unloaded(path string) {
 	deleted := sm.setCrontabStatus(path, nil)
 
-	zap.L().Info(
+	sm.logger.Info(
 		"unloaded",
 		zap.String("path", path),
 		zap.Int("tasks", len(deleted.Tasks)),
@@ -222,7 +231,7 @@ func (sm *StatusMonitor) StartTask(t Task) (finish func(exitCode int, err error)
 
 	startedCounter.WithLabelValues(t.Source, t.ScheduleSpec, t.User, t.Command, t.Stdin).Inc()
 
-	l := zap.L().With(
+	l := sm.logger.With(
 		zap.String("source", t.Source),
 		zap.String("schedule", t.ScheduleSpec),
 		zap.String("user", t.User),
@@ -232,8 +241,8 @@ func (sm *StatusMonitor) StartTask(t Task) (finish func(exitCode int, err error)
 	l.Info("start")
 
 	var logRecord strings.Builder
-	stdout = io.MultiWriter(&logRecord, NewStdoutLogger(t))
-	stderr = io.MultiWriter(&logRecord, NewStderrLogger(t))
+	stdout = io.MultiWriter(&logRecord, NewStdoutLogger(sm.logger, t))
+	stderr = io.MultiWriter(&logRecord, NewStderrLogger(sm.logger, t))
 
 	stime := time.Now()
 
@@ -384,7 +393,7 @@ func (sm *StatusMonitor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		zap.L().Error(
+		sm.logger.Error(
 			"failed to render page",
 			zap.Error(err),
 			zap.String("method", r.Method),

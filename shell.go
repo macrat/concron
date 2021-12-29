@@ -5,6 +5,7 @@ import (
 	"os/user"
 
 	"github.com/google/shlex"
+	"go.uber.org/zap"
 )
 
 // ShellOpts gets SHELL_OPTS from Environ and parses it.
@@ -19,7 +20,7 @@ func ShellOpts(env Environ) []string {
 
 // SetUserInfo sets execution user settings to exec.Cmd.
 // If the username is "*", it sets current user's information.
-func SetUserInfo(cmd *exec.Cmd, username string) (err error) {
+func SetUserInfo(l LoggerHolder, cmd *exec.Cmd, username string) (err error) {
 	var u *user.User
 	if username == "*" {
 		u, err = user.Current()
@@ -41,5 +42,9 @@ func SetUserInfo(cmd *exec.Cmd, username string) (err error) {
 
 	cmd.Dir = e.Get("HOME", cmd.Dir)
 
-	return SetUID(cmd, u)
+	return SetUID(l, cmd, u)
+}
+
+type LoggerHolder interface {
+	L() *zap.Logger
 }

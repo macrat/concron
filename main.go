@@ -20,21 +20,18 @@ var (
 	DefaultListen = ":8000"
 )
 
-func startServer(ctx context.Context, env Environ) {
+func startServer(ctx context.Context, logStream zapcore.WriteSyncer, env Environ) {
 	var logLevel zapcore.Level
 	if err := logLevel.Set(env.Get("CONCRON_LOGLEVEL", "info")); err != nil {
-		undo := PrepareLogger(zap.InfoLevel)
-		zap.L().Fatal("unknown log level", zap.Error(err))
-		undo()
+		NewLogger(os.Stdout, zap.InfoLevel).Fatal("unknown log level", zap.Error(err))
 	}
 
-	undo := PrepareLogger(logLevel)
-	defer undo()
+	logger := NewLogger(logStream, logLevel)
 
 	address := env.Get("CONCRON_LISTEN", DefaultListen)
 	pathes := filepath.SplitList(env.Get("CONCRON_PATH", "/etc/crontab:/etc/cron.d"))
 
-	zap.L().Info(
+	logger.Info(
 		"start concron",
 		zap.String("version", version),
 		zap.String("commit", commit),
@@ -44,8 +41,8 @@ func startServer(ctx context.Context, env Environ) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	c := cron.New(cron.WithLogger(CronLogger{}))
-	sm := NewStatusMonitor()
+	c := cron.New(cron.WithLogger((*CronLogger)(logger)))
+	sm := NewStatusMonitor(logger)
 	cc := NewCrontabCollector(ctx, c, sm, pathes)
 
 	cc.Register(ctx)
@@ -55,7 +52,7 @@ func startServer(ctx context.Context, env Environ) {
 	go func() {
 		err := http.ListenAndServe(address, sm)
 		if err != nil {
-			zap.L().Fatal("http server", zap.String("address", address), zap.Error(err))
+			logger.Fatal("http server", zap.String("address", address), zap.Error(err))
 		}
 		cancel()
 	}()
@@ -105,5 +102,5 @@ func main() {
 		return
 	}
 
-	startServer(ctx, GetEnviron())
+	startServer(ctx, os.Stdout, GetEnviron())
 }

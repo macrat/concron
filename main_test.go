@@ -11,24 +11,6 @@ import (
 	"time"
 )
 
-type TestLogStream struct {
-	T *testing.T
-}
-
-func (s TestLogStream) Write(p []byte) (int, error) {
-	s.T.Helper()
-	l := string(p)
-	if l[len(l)-1] == '\n' {
-		l = l[:len(l)-1]
-	}
-	s.T.Log(l)
-	return len(p), nil
-}
-
-func (s TestLogStream) Sync() error {
-	return nil
-}
-
 func Test_reboot(t *testing.T) {
 	timeout := 100 * time.Millisecond
 	if runtime.GOOS == "windows" {
@@ -71,9 +53,7 @@ func Test_reboot(t *testing.T) {
 		}
 	}
 
-	LogStream = TestLogStream{t}
-
-	startServer(ctx, Environ{
+	startServer(ctx, TestLogStream{t}, Environ{
 		"CONCRON_LOGLEVEL=debug",
 		"CONCRON_LISTEN=localhost:8080",
 		"CONCRON_PATH=" + strings.Join([]string{

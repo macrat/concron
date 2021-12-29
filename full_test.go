@@ -54,9 +54,8 @@ func Test_fulltest(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute+10*time.Second)
 	defer cancel()
-	LogStream = TestLogStream{t}
 
-	startServer(ctx, Environ{
+	startServer(ctx, TestLogStream{t}, Environ{
 		"CONCRON_LOGLEVEL=debug",
 		"CONCRON_LISTEN=localhost:8000",
 		"CONCRON_PATH=" + cronPath,

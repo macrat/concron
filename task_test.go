@@ -8,6 +8,8 @@ import (
 	"runtime"
 	"testing"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 func TestParseTask(t *testing.T) {
@@ -93,6 +95,7 @@ type TestTaskReporter struct {
 	Output   bytes.Buffer
 	ExitCode int
 	Err      error
+	Logger   *zap.Logger
 }
 
 func (r *TestTaskReporter) StartTask(t Task) (finish func(int, error), stdout, stderr io.Writer) {
@@ -100,6 +103,10 @@ func (r *TestTaskReporter) StartTask(t Task) (finish func(int, error), stdout, s
 		r.ExitCode = exitCode
 		r.Err = err
 	}, &r.Output, &r.Output
+}
+
+func (r *TestTaskReporter) L() *zap.Logger {
+	return r.Logger
 }
 
 func TestTask_Run(t *testing.T) {
@@ -165,7 +172,7 @@ func TestTask_Run(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 			defer cancel()
 
-			var r TestTaskReporter
+			r := TestTaskReporter{Logger: NewTestLogger(t)}
 			task.Job(ctx, &r).Run()
 
 			if r.Output.String() != tt.Output {

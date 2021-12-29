@@ -16,10 +16,10 @@ const DefaultShellOpts = "/C"
 
 // SetUID sets execution user to exec.Cmd.
 // In Windows, this function doesn't set user.
-func SetUID(cmd *exec.Cmd, u *user.User) error {
+func SetUID(l LoggerHolder, cmd *exec.Cmd, u *user.User) error {
 	cur, err := user.Current()
 	if err == nil && cur.Uid != u.Uid {
-		zap.L().Warn(
+		l.L().Warn(
 			"change the execution user is not supported in Windows",
 			zap.String("username", u.Username),
 		)
