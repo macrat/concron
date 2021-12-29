@@ -2,7 +2,7 @@ VERSION := $(shell git describe --tags --dirty | sed -e 's/^v//' -e 's/-g.*$$//'
 COMMIT := $(shell git rev-parse --short HEAD)
 DEFAULT_LISTEN := :8000
 
-concron: *.go .git/index
+concron: *.go
 	go build -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT} -X main.DefaultListen=${DEFAULT_LISTEN}" -trimpath .
 
 .PHONY: build
