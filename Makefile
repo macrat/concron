@@ -1,13 +1,20 @@
-VERSION ?= $(shell git describe --tags --dirty | grep -o '[0-9].*')
-COMMIT ?= $(shell git rev-parse --short HEAD)
-DEFAULT_LISTEN ?= :8000
+VERSION := $(shell git describe --tags --dirty | sed -e 's/^v//' -e 's/-g.*$$//')
+COMMIT := $(shell git rev-parse --short HEAD)
+DEFAULT_LISTEN := :8000
 
-concron: *.go
-	go build -ldflags="-s -w -X main.version=$(or ${VERSION},HEAD) -X main.commit=${COMMIT} -X main.DefaultListen=${DEFAULT_LISTEN}" -trimpath .
+concron: *.go .git/index
+	go build -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${COMMIT} -X main.DefaultListen=${DEFAULT_LISTEN}" -trimpath .
+
+.PHONY: build
+build: concron
 
 .PHONY: fmt
 fmt:
 	gofmt -s -w *.go
+
+.PHONY: fmttest
+fmttest:
+	! gofmt -s -d -e *.go | grep .
 
 .PHONY: test
 test:
