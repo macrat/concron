@@ -1,0 +1,3 @@
+@reboot      *  echo "hello world" >> {{.OutputPath}}/count1
+@every 1.5m  *  echo "hello world" >> {{.OutputPath}}/count2
+* * * * *    *  echo "hello world" >> {{.OutputPath}}/count3

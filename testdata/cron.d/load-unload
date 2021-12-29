@@ -8,7 +8,7 @@
 @reboot    {{.User}}  echo '* * * * *  *  date +B:\\\%M:\\\%S | tee {{.OutputPath}}/minutely-b' | tee {{.CronPath}}/minutely-b
 
 # remove crontab file itself at the first execution.
-* * * * *  {{.User}}  rm {{.CronPath}}/fulltest
+* * * * *  {{.User}}  rm {{.CronPath}}/load-unload
 
 
 #                      schedule table
