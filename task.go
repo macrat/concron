@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"hash/crc64"
 	"io"
 	"os/exec"
@@ -13,7 +14,8 @@ import (
 )
 
 var (
-	hashTable = crc64.MakeTable(crc64.ISO)
+	hashTable      = crc64.MakeTable(crc64.ISO)
+	ErrInvalidLine = errors.New("invalid line")
 )
 
 // Task is a single task in the crontab.
@@ -35,7 +37,11 @@ type Task struct {
 func ParseTask(source string, s string, env Environ) (Task, error) {
 	t := Task{Source: source, Env: env}
 
-	t.ScheduleSpec, t.User, t.Command, t.Stdin = SplitTaskLine(s)
+	var err error
+	t.ScheduleSpec, t.User, t.Command, t.Stdin, err = SplitTaskLine(s)
+	if err != nil {
+		return Task{}, err
+	}
 
 	if t.ScheduleSpec == "@reboot" {
 		t.IsReboot = true
@@ -113,7 +119,7 @@ func (t Task) CommandWithStdin() string {
 	if t.Stdin == "" {
 		return cmd
 	} else {
-		return cmd + "%" + t.EscapedStdin()
+		return cmd + " %" + t.EscapedStdin()
 	}
 }
 
@@ -125,6 +131,9 @@ func (t Task) String() string {
 // CommandBin returns the first part of the command.
 // It is the command name in most cases.
 func (t Task) CommandBin() string {
+	if t.Command == "" {
+		return ""
+	}
 	return strings.ReplaceAll(strings.Fields(t.Command)[0], "%", "\\%")
 }
 
@@ -142,11 +151,17 @@ func (t Task) CommandArgs() string {
 }
 
 // SplitTaskLine splits a task line in crontab.
-func SplitTaskLine(s string) (schedule, user, command, stdin string) {
+func SplitTaskLine(s string) (schedule, user, command, stdin string, err error) {
 	xs := strings.Fields(s)
+	if len(xs) < 3 {
+		return "", "", "", "", ErrInvalidLine
+	}
 
 	if s[0] == byte('@') {
 		if strings.HasPrefix(s, "@every") {
+			if len(xs) < 4 {
+				return "", "", "", "", ErrInvalidLine
+			}
 			schedule = strings.Join(xs[:2], " ")
 			user = xs[2]
 			command = strings.Join(xs[3:], " ")
@@ -156,6 +171,9 @@ func SplitTaskLine(s string) (schedule, user, command, stdin string) {
 			command = strings.Join(xs[2:], " ")
 		}
 	} else {
+		if len(xs) < 7 {
+			return "", "", "", "", ErrInvalidLine
+		}
 		schedule = strings.Join(xs[:5], " ")
 		user = xs[5]
 		command = strings.Join(xs[6:], " ")
@@ -178,7 +196,7 @@ func ParseCommand(s string) (command, stdin string) {
 		command = s
 	}
 
-	command = strings.ReplaceAll(command, "\\%", "%")
+	command = strings.TrimSpace(strings.ReplaceAll(command, "\\%", "%"))
 	stdin = strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(stdin, "\\%", "\r"), "%", "\n"), "\r", "%")
 	return
 }
