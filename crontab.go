@@ -50,7 +50,7 @@ func ParseCrontab(path string, r io.Reader, env Environ) (Crontab, error) {
 		case EnvLine:
 			env.Set(line)
 		case InvalidLine:
-			return Crontab{}, fmt.Errorf("%d: invalid line", ln)
+			return Crontab{}, fmt.Errorf("%d: %w", ln, ErrInvalidLine)
 		}
 	}
 	return ct, s.Err()

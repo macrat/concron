@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"os"
+	"path/filepath"
 	"reflect"
-	"strings"
 	"testing"
 )
 
@@ -31,6 +33,32 @@ func TestDetectLineType(t *testing.T) {
 	}
 }
 
+func ReadTestCrontab(t testing.TB, name string) []byte {
+	t.Helper()
+
+	raw, err := os.ReadFile(filepath.Join("./testdata/cron.d", name))
+	if err != nil {
+		t.Fatalf("failed to read crontab: %s", err)
+	}
+
+	return raw
+}
+
+func ReadAllTestCrontab(t testing.TB) [][]byte {
+	t.Helper()
+
+	xs, err := os.ReadDir("./testdata/cron.d")
+	if err != nil {
+		t.Fatalf("failed to read crontab directory: %s", err)
+	}
+
+	var r [][]byte
+	for _, x := range xs {
+		r = append(r, ReadTestCrontab(t, x.Name()))
+	}
+	return r
+}
+
 func TestParseCrontab(t *testing.T) {
 	type TaskTest struct {
 		Spec string
@@ -38,36 +66,22 @@ func TestParseCrontab(t *testing.T) {
 	}
 
 	tests := []struct {
-		Input string
+		Input []byte
 		Tasks []TaskTest
 	}{
 		{
-			`
-				SHELL = sh
-
-				TZ = Asia/Tokyo
-				@daily  root  echo hello
-
-				TZ = UTC
-				0 0 * * *  ec2-user  echo world
-
-				# duplicated task should be ignored
-				0 0 * * *    ec2-user    echo  world
-
-				TZ = "w h e r e ?"
-				@reboot   admin   cat%concron%initialized!
-			`,
+			ReadTestCrontab(t, "valid"),
 			[]TaskTest{
 				{"@daily  root  echo hello", Environ{"SHELL=sh", "TZ=Asia/Tokyo"}},
 				{"0 0 * * *  ec2-user  echo world", Environ{"SHELL=sh", "TZ=UTC"}},
-				{"@reboot  admin  cat%concron%initialized!", Environ{"SHELL=sh", "TZ=w h e r e ?"}},
+				{"@reboot  admin  cat %concron%initialized!", Environ{"SHELL=sh", "TZ=w h e r e ?"}},
 			},
 		},
 	}
 
 	for i, tt := range tests {
 		t.Run(fmt.Sprint(i), func(t *testing.T) {
-			ct, err := ParseCrontab("/path/to/crontab", strings.NewReader(tt.Input), Environ{})
+			ct, err := ParseCrontab("/path/to/crontab", bytes.NewReader(tt.Input), Environ{})
 			if err != nil {
 				t.Fatalf("failed to parse: %s", err)
 			}

@@ -1,0 +1,7 @@
+* * * * *  root  echo hello world >> /var/log/something
+0,30,45 6-18 0,5 * SUN  root  echo hello world >> /var/log/something
+@reboot  *  docker run --rm busybox echo hello
+@monthly  alice  cat%hello%world% > /dev/null 2>&1
+@daily  bob %hello
+@hourly ec2-user   docker run --rm -v /var/task:/data some-task
+0 22 * * 1-5    * mail -s "It's 10pm" joe%Joe,%%Where are your kids?%

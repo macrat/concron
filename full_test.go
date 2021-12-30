@@ -23,7 +23,7 @@ func Test_fulltest(t *testing.T) {
 		t.Fatalf("failed to get current user information: %s", err)
 	}
 
-	tmpls, err := template.ParseGlob("testdata/cron.d/*")
+	tmpls, err := template.ParseGlob("testdata/fulltest/*")
 	if err != nil {
 		t.Fatalf("failed to read crontab template: %s", err)
 	}

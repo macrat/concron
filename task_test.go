@@ -28,7 +28,7 @@ func TestParseTask(t *testing.T) {
 		{" 1   1 * * 1,3\troot\techo  wah", "1 1 * * 1,3", "root", "echo wah", "", "echo", "wah"},
 		{"@hourly  root  date +\\%H:\\%M", "@hourly", "root", "date +%H:%M", "", "date", "+\\%H:\\%M"},
 		{"@monthly alice cat%hello%world%", "@monthly", "alice", "cat", "hello\nworld\n", "cat", "%hello%world%"},
-		{"* 9-18 * * 1-5  bob  cat -n >> out\\%put%\\%hello\\%%world%", "* 9-18 * * 1-5", "bob", "cat -n >> out%put", "%hello%\nworld\n", "cat", "-n >> out\\%put%\\%hello\\%%world%"},
+		{"* 9-18 * * 1-5  bob  cat -n >> out\\%put%\\%hello\\%%world%", "* 9-18 * * 1-5", "bob", "cat -n >> out%put", "%hello%\nworld\n", "cat", "-n >> out\\%put %\\%hello\\%%world%"},
 	}
 
 	for _, tt := range tests {
