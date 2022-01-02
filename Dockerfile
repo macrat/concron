@@ -26,6 +26,7 @@ HEALTHCHECK CMD wget --spider http://localhost || exit 1
 
 COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=builder /usr/src/concron/concron /usr/bin/concron
-COPY ./assets/start-concron.sh /start-concron.sh
+COPY ./assets/entrypoint.sh /entrypoint.sh
 
-CMD ["/start-concron.sh"]
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["/usr/bin/concron"]
