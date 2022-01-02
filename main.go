@@ -65,6 +65,7 @@ func startServer(ctx context.Context, logStream zapcore.WriteSyncer, env Environ
 
 func init() {
 	flag.Usage = func() {
+		fmt.Println("Concron - Cron for Container")
 		fmt.Println()
 		fmt.Println("Usage:")
 		fmt.Println("  concron [flags]")
@@ -93,7 +94,6 @@ func main() {
 	flag.Parse()
 
 	if *showHelp {
-		fmt.Println("Concron - Cron for Container")
 		flag.Usage()
 		return
 	}
