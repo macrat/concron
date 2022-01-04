@@ -86,11 +86,11 @@ jobs:
           flavor: |
             latest=false
           tags: |
-            type=ref,event=branch,prefix=busybox-
-            type=ref,event=pr,prefix=busybox-
-            type=semver,pattern={{version}},prefix=busybox-
-            type=semver,pattern={{major}}.{{minor}},prefix=busybox-
-            type=semver,pattern={{major}},prefix=busybox-
+            type=ref,event=branch,suffix=-busybox
+            type=ref,event=pr,suffix=-busybox
+            type=semver,pattern={{version}},suffix=-busybox
+            type=semver,pattern={{major}}.{{minor}},suffix=-busybox
+            type=semver,pattern={{major}},suffix=-busybox
             type=raw,value=busybox,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
           labels: |
             org.opencontainers.image.description=Cron for Container with busybox.
@@ -117,11 +117,11 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
-            type=ref,event=branch,prefix=docker-
-            type=ref,event=pr,prefix=docker-
-            type=semver,pattern={{version}},prefix=docker-
-            type=semver,pattern={{major}}.{{minor}},prefix=docker-
-            type=semver,pattern={{major}},prefix=docker-
+            type=ref,event=branch,suffix=-docker
+            type=ref,event=pr,suffix=-docker
+            type=semver,pattern={{version}},suffix=-docker
+            type=semver,pattern={{major}}.{{minor}},suffix=-docker
+            type=semver,pattern={{major}},suffix=-docker
             type=raw,value=docker,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
           labels: |
             org.opencontainers.image.description=Cron for Container that includes Docker commands.
