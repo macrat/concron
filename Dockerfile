@@ -8,7 +8,7 @@ ARG COMMIT=unknown
 
 RUN apt update && apt install -y upx
 
-RUN mkdir -p /output/usr/bin /output/usr/share && cp -r /usr/share/zoneinfo /output/usr/share/zoneinfo
+RUN mkdir -p /output/usr/bin /output/usr/share /output/etc && cp -r /usr/share/zoneinfo /output/usr/share/zoneinfo && ln -s /usr/share/zoneinfo/UTC /output/etc/localtime
 COPY ./assets/entrypoint.sh /output/entrypoint.sh
 
 WORKDIR /usr/src/concron
