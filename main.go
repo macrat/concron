@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"time"
 
 	"github.com/robfig/cron/v3"
 	"go.uber.org/zap"
@@ -59,9 +61,13 @@ func startServer(ctx context.Context, logStream zapcore.WriteSyncer, env Environ
 
 	go c.Run()
 	<-ctx.Done()
+
 	sm.StartTerminating()
 	<-c.Stop().Done()
-	server.Shutdown(context.Background())
+
+	ctx2, cancel2 := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel2()
+	server.Shutdown(ctx2)
 }
 
 func init() {
@@ -86,7 +92,7 @@ func init() {
 }
 
 func main() {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
 	showHelp := flag.Bool("h", false, "Show help and exit.")
