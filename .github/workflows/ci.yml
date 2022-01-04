@@ -100,7 +100,7 @@ jobs:
           tags: ${{ steps.busybox.outputs.tags }}
           labels: ${{ steps.busybox.outputs.labels }}
           build-args: |
-            BASE_IMAGE=busybox:latest
+            BASE_IMAGE=busybox:glibc
             VERSION=${{ steps.version.outputs.version }}
             COMMIT=${{ steps.version.outputs.commit }}
           platforms: linux/386,linux/amd64,linux/arm/v5,linux/arm/v7,linux/arm64/v8
