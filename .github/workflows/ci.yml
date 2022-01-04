@@ -108,6 +108,34 @@ jobs:
           cache-to: type=local,dest=/tmp/.buildx-cache
 
       - uses: docker/metadata-action@v3
+        id: slim
+        with:
+          images: ghcr.io/macrat/concron
+          flavor: |
+            latest=false
+          tags: |
+            type=ref,event=branch,suffix=-slim
+            type=ref,event=pr,suffix=-slim
+            type=semver,pattern={{version}},suffix=-slim
+            type=semver,pattern={{major}}.{{minor}},suffix=-slim
+            type=semver,pattern={{major}},suffix=-slim
+            type=raw,value=slim,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+          labels: |
+            org.opencontainers.image.description=Cron for Container on Debian slim.
+      - uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: ${{ steps.slim.outputs.tags }}
+          labels: ${{ steps.slim.outputs.labels }}
+          build-args: |
+            BASE_IMAGE=debian:stable-slim
+            VERSION=${{ steps.version.outputs.version }}
+            COMMIT=${{ steps.version.outputs.commit }}
+          platforms: linux/386,linux/amd64,linux/arm/v5,linux/arm/v7,linux/arm64/v8
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache
+
+      - uses: docker/metadata-action@v3
         id: docker
         with:
           images: ghcr.io/macrat/concron
