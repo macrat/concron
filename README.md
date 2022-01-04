@@ -46,7 +46,7 @@ More examples are in [examples directory](./examples).
 You can just start `crontab` command.
 
 ``` shell
-$ export CRONTAB_PATH=/etc/crontab:/etc/cron.d CRONTAB_LISTEN=":8000"  # These are default values.
+$ export CONCRON_PATH=/etc/crontab:/etc/cron.d CONCRON_LISTEN=":8000"  # These are default values.
 
 $ crontab
 ```
