@@ -41,11 +41,7 @@ func startServer(ctx context.Context, logStream zapcore.WriteSyncer, env Environ
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	c := cron.New(cron.WithLogger((*CronLogger)(logger)))
 	sm := NewStatusMonitor(logger)
-	cc := NewCrontabCollector(ctx, c, sm, pathes)
-
-	cc.Register(ctx)
 
 	server := &http.Server{}
 	defer server.Close()
@@ -57,8 +53,13 @@ func startServer(ctx context.Context, logStream zapcore.WriteSyncer, env Environ
 		cancel()
 	}()
 
+	c := cron.New(cron.WithLogger((*CronLogger)(logger)))
+	cc := NewCrontabCollector(ctx, c, sm, pathes)
+	cc.Register(ctx)
+
 	go c.Run()
 	<-ctx.Done()
+	sm.StartTerminating()
 	<-c.Stop().Done()
 	server.Shutdown(context.Background())
 }

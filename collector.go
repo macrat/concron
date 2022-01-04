@@ -43,6 +43,7 @@ func NewCrontabCollector(ctx context.Context, c *cron.Cron, sm *StatusMonitor, p
 		cron:    c,
 	}
 	cc.searchAndLoad(ctx, true)
+	sm.FinishFirstLoad()
 	return cc
 }
 

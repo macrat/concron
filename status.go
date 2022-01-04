@@ -111,6 +111,27 @@ func init() {
 	prometheus.MustRegister(loadDurationSummary)
 }
 
+type ReadyStatus uint8
+
+const (
+	StatusLoading ReadyStatus = iota
+	StatusReady
+	StatusTerminating
+)
+
+func (s ReadyStatus) String() string {
+	switch s {
+	case StatusLoading:
+		return "loading"
+	case StatusReady:
+		return "ok"
+	case StatusTerminating:
+		return "terminating"
+	default:
+		return "unknown"
+	}
+}
+
 // TaskStatus is a status of a task execution.
 type TaskStatus struct {
 	Timestamp time.Time
@@ -127,11 +148,12 @@ type CrontabStatus struct {
 
 // StatusMonitor collects task running status, and serve status/metrics pages.
 type StatusMonitor struct {
-	sync.Mutex
+	sync.RWMutex
 
 	logger  *zap.Logger
 	crontab map[string]*CrontabStatus
 	task    map[uint64]TaskStatus
+	ready   ReadyStatus
 }
 
 func NewStatusMonitor(l *zap.Logger) *StatusMonitor {
@@ -217,6 +239,22 @@ func (sm *StatusMonitor) Unloaded(path string) {
 		zap.String("path", path),
 		zap.Int("tasks", len(deleted.Tasks)),
 	)
+}
+
+// FinishFirstLoad reports the first loading has finished.
+// It turns the /readyz endpoint to 200 OK.
+func (sm *StatusMonitor) FinishFirstLoad() {
+	sm.Lock()
+	sm.ready = StatusReady
+	sm.Unlock()
+}
+
+// StartTerminating reports the Concron starts terminating process.
+// It turns the /readyz endpoint to 503 Service Unavailable.
+func (sm *StatusMonitor) StartTerminating() {
+	sm.Lock()
+	sm.ready = StatusTerminating
+	sm.Unlock()
 }
 
 // StartTask reports a task has started.
@@ -328,8 +366,8 @@ type StatusSnapshot struct {
 
 // Status reports the current status and logs.
 func (sm *StatusMonitor) Status() []StatusSnapshot {
-	sm.Lock()
-	defer sm.Unlock()
+	sm.RLock()
+	defer sm.RUnlock()
 
 	var r []StatusSnapshot
 
@@ -385,6 +423,15 @@ func (sm *StatusMonitor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			err = statusPageTemplate.Execute(w, map[string]interface{}{
 				"Status": sm.Status(),
 			})
+		case "/livez", "/healthz":
+			_, err = w.Write([]byte("ok\n"))
+		case "/readyz":
+			sm.RLock()
+			if sm.ready != StatusReady {
+				w.WriteHeader(http.StatusServiceUnavailable)
+			}
+			sm.RUnlock()
+			_, err = w.Write([]byte(sm.ready.String() + "\n"))
 		default:
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			w.WriteHeader(http.StatusNotFound)

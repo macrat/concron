@@ -130,3 +130,13 @@ If you want get more information, please set `debug` to `CONCRON_LOGLEVEL`. Or, 
 
 The Concron only writes log to the stdout.
 Please collect them using container engine's log collector or something.
+
+
+## Health check
+
+Concron has 3 endpoints to check the status.
+
+`/healthz` and `/livez` always return 200 OK while Concron running.
+
+`/readyz` returns 200 OK while Concron is running and ready to execute tasks.
+Otherwise, it returns 503 Service Unavailable. For example, before done to load all tasks, or after receive interrupt signal.

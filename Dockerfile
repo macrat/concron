@@ -26,7 +26,7 @@ RUN for id in `seq 1000 1010`; do adduser -D -u $id -s /sbin/nologin -H -h / -g 
 ENV CONCRON_LISTEN=":80" CONCRON_PATH="/etc/crontab:/etc/cron.d"
 EXPOSE 80
 WORKDIR /tmp/concron
-HEALTHCHECK CMD wget --spider http://localhost || exit 1
+HEALTHCHECK CMD wget --spider http://localhost/livez || exit 1
 
 COPY --from=builder /output /
 
