@@ -401,7 +401,7 @@ var statusPageTemplate = template.Must(template.New("status.html").Parse(statusP
 var errorPageTemplateStr string
 var errorPageTemplate = template.Must(template.New("errors.html").Parse(errorPageTemplateStr))
 
-//go:embed static/icon.svg
+//go:embed assets/icon.svg
 var iconSvg []byte
 
 // ServeHTTP implements http.Handler.
