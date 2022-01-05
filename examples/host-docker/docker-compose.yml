@@ -14,9 +14,9 @@ services:
 
       # Tasks
       CONCRON_CRONTAB: |
-        #   schedule  | user | image name  | command
-          */5 * * * *    *     hello-world
-          *   * * * *    *     busybox       date
+        #   schedule  | image name  | command
+          */5 * * * *   hello-world
+          *   * * * *   busybox       date
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     ports:

@@ -17,8 +17,8 @@ func TestDetectLineType(t *testing.T) {
 		{"", EmptyLine},
 		{"# this is comment", EmptyLine},
 		{"* * * * *\troot\techo hello world", TaskLine},
-		{"15 */2 * * *\tuser\techo hello world", TaskLine},
-		{"@hourly me echo wah", TaskLine},
+		{"15 */2 * * *\techo hello world", TaskLine},
+		{"@hourly echo wah", TaskLine},
 		{"MAILTO=\"\"", EnvLine},
 		{"SHELL = /bin/sh", EnvLine},
 		{"INVAlID LINE", InvalidLine},
@@ -72,9 +72,9 @@ func TestParseCrontab(t *testing.T) {
 		{
 			ReadTestCrontab(t, "valid"),
 			[]TaskTest{
-				{"@daily  root  echo hello", Environ{"SHELL=sh", "TZ=Asia/Tokyo"}},
-				{"0 0 * * *  ec2-user  echo world", Environ{"SHELL=sh", "TZ=UTC"}},
-				{"@reboot  admin  cat %concron%initialized!", Environ{"SHELL=sh", "TZ=w h e r e ?"}},
+				{"@daily  echo hello", Environ{"SHELL=sh", "TZ=Asia/Tokyo"}},
+				{"0 0 * * *  echo world", Environ{"SHELL=sh", "TZ=UTC"}},
+				{"@reboot  admin  cat %concron%initialized!", Environ{"SHELL=sh", "TZ=UTC", "ENABLE_USER_COLUMN=yes"}},
 			},
 		},
 	}

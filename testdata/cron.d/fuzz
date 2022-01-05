@@ -1,3 +1,7 @@
+SHELL = /bin/sh
+CRON_TZ = Asia/Tokyo
+ENABLE_USER_COLUMN = yes
+
 * * * * *  root  echo hello world >> /var/log/something
 0,30,45 6-18 0,5 * SUN  root  echo hello world >> /var/log/something
 @reboot  *  docker run --rm busybox echo hello
@@ -5,3 +9,18 @@
 @daily  bob %hello
 @hourly ec2-user   docker run --rm -v /var/task:/data some-task
 0 22 * * 1-5    * mail -s "It's 10pm" joe%Joe,%%Where are your kids?%
+@midnight exit
+
+SHELL=/bin/bash
+CRON_TZ=UTC
+ENABLE_USER_COLUMN = no
+
+* * * * *  echo hello world >> /var/log/something
+0,30,45 6-18 0,5 SUN  root  echo hello world >> /var/log/something
+@reboot  docker run --rm busybox echo hello
+@monthly  ce  cat%hello%world% > /dev/null 2>&1
+@daily  %hello
+@hourly	docker run --rm -v /var/task:/data some-task
+0 22 * * 1-5     mail -s "It's 10pm" joe%Joe,%%Where are your kids?%
+1 2 3 4 5  echo hello
+1-2 2-3 3-4 4-5 5-6  exit

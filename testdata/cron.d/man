@@ -1,4 +1,5 @@
 # this crontab is from man page.
+ENABLE_USER_COLUMN = yes
 
 
 # use /bin/sh to run commands, no matter what /etc/passwd says

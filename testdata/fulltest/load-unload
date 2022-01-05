@@ -1,3 +1,7 @@
+SHELL = /bin/sh
+CRON_TZ = UTC
+ENABLE_USER_COLUMN = yes
+
 # write reboot file when started.
 @reboot    {{.User}}  date +R:\%M:\%S | tee {{.OutputPath}}/reboot
 
@@ -5,7 +9,7 @@
 * * * * *  {{.User}}  date +A:\%M:\%S | tee {{.OutputPath}}/minutely-a
 
 # generate minutely-b crontab after started.
-@reboot    {{.User}}  echo '* * * * *  *  date +B:\\\%M:\\\%S | tee {{.OutputPath}}/minutely-b' | tee {{.CronPath}}/minutely-b
+@reboot    *          echo '* * * * *  date +B:\\\%M:\\\%S | tee {{.OutputPath}}/minutely-b' | tee {{.CronPath}}/minutely-b
 
 # remove crontab file itself at the first execution.
 * * * * *  {{.User}}  rm {{.CronPath}}/load-unload

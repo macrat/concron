@@ -38,7 +38,7 @@ func ParseTask(source string, s string, env Environ) (Task, error) {
 	t := Task{Source: source, Env: env}
 
 	var err error
-	t.ScheduleSpec, t.User, t.Command, t.Stdin, err = SplitTaskLine(s)
+	t.ScheduleSpec, t.User, t.Command, t.Stdin, err = SplitTaskLine(s, env.GetBool("ENABLE_USER_COLUMN"))
 	if err != nil {
 		return Task{}, err
 	}
@@ -124,8 +124,13 @@ func (t Task) CommandWithStdin() string {
 }
 
 // String returns string that usable in crontab file.
+// In most cases, its output is not enough to re-construct a crontab file, because it is not included the environment variables.
 func (t Task) String() string {
-	return t.ScheduleSpec + "  " + t.User + "  " + t.CommandWithStdin()
+	if t.Env.GetBool("ENABLE_USER_COLUMN") {
+		return t.ScheduleSpec + "  " + t.User + "  " + t.CommandWithStdin()
+	} else {
+		return t.ScheduleSpec + "  " + t.CommandWithStdin()
+	}
 }
 
 // CommandBin returns the first part of the command.
@@ -151,9 +156,9 @@ func (t Task) CommandArgs() string {
 }
 
 // SplitTaskLine splits a task line in crontab.
-func SplitTaskLine(s string) (schedule, user, command, stdin string, err error) {
+func SplitTaskLine(s string, includeUser bool) (schedule, user, command, stdin string, err error) {
 	xs := strings.Fields(s)
-	if len(xs) < 3 {
+	if len(xs) < 2 || (includeUser && len(xs) < 3) {
 		return "", "", "", "", ErrInvalidLine
 	}
 
@@ -163,20 +168,25 @@ func SplitTaskLine(s string) (schedule, user, command, stdin string, err error) 
 				return "", "", "", "", ErrInvalidLine
 			}
 			schedule = strings.Join(xs[:2], " ")
-			user = xs[2]
-			command = strings.Join(xs[3:], " ")
+			xs = xs[2:]
 		} else {
 			schedule = xs[0]
-			user = xs[1]
-			command = strings.Join(xs[2:], " ")
+			xs = xs[1:]
 		}
 	} else {
-		if len(xs) < 7 {
+		if len(xs) < 6 || (includeUser && len(xs) < 7) {
 			return "", "", "", "", ErrInvalidLine
 		}
 		schedule = strings.Join(xs[:5], " ")
-		user = xs[5]
-		command = strings.Join(xs[6:], " ")
+		xs = xs[5:]
+	}
+
+	if includeUser {
+		user = xs[0]
+		command = strings.Join(xs[1:], " ")
+	} else {
+		user = "*"
+		command = strings.Join(xs, " ")
 	}
 
 	command, stdin = ParseCommand(command)

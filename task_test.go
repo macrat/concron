@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"os/user"
 	"runtime"
@@ -14,26 +15,29 @@ import (
 
 func TestParseTask(t *testing.T) {
 	tests := []struct {
-		Input    string
-		Schedule string
-		User     string
-		Command  string
-		Stdin    string
-		Bin      string
-		Args     string
+		Input       string
+		IncludeUser bool
+		Schedule    string
+		User        string
+		Command     string
+		Stdin       string
+		Bin         string
+		Args        string
 	}{
-		{"@daily  root  echo hello", "@daily", "root", "echo hello", "", "echo", "hello"},
-		{"@every 1h  hello  /usr/local/bin/task", "@every 1h", "hello", "/usr/local/bin/task", "", "/usr/local/bin/task", ""},
-		{"15 */3 * * *  user  /run.sh", "15 */3 * * *", "user", "/run.sh", "", "/run.sh", ""},
-		{" 1   1 * * 1,3\troot\techo  wah", "1 1 * * 1,3", "root", "echo wah", "", "echo", "wah"},
-		{"@hourly  root  date +\\%H:\\%M", "@hourly", "root", "date +%H:%M", "", "date", "+\\%H:\\%M"},
-		{"@monthly alice cat%hello%world%", "@monthly", "alice", "cat", "hello\nworld\n", "cat", "%hello%world%"},
-		{"* 9-18 * * 1-5  bob  cat -n >> out\\%put%\\%hello\\%%world%", "* 9-18 * * 1-5", "bob", "cat -n >> out%put", "%hello%\nworld\n", "cat", "-n >> out\\%put %\\%hello\\%%world%"},
+		{"@daily  root  echo hello", true, "@daily", "root", "echo hello", "", "echo", "hello"},
+		{"@daily  echo hello", false, "@daily", "*", "echo hello", "", "echo", "hello"},
+		{"@every 1h  hello  /usr/local/bin/task", true, "@every 1h", "hello", "/usr/local/bin/task", "", "/usr/local/bin/task", ""},
+		{"15 */3 * * *  user  /run.sh", true, "15 */3 * * *", "user", "/run.sh", "", "/run.sh", ""},
+		{" 1   1 * * 1,3\troot\techo  wah", true, "1 1 * * 1,3", "root", "echo wah", "", "echo", "wah"},
+		{" 1   1 * * 1,3\troot\techo  wah", false, "1 1 * * 1,3", "*", "root echo wah", "", "root", "echo wah"},
+		{"@hourly  root  date +\\%H:\\%M", true, "@hourly", "root", "date +%H:%M", "", "date", "+\\%H:\\%M"},
+		{"@monthly alice cat%hello%world%", true, "@monthly", "alice", "cat", "hello\nworld\n", "cat", "%hello%world%"},
+		{"* 9-18 * * 1-5  bob  cat -n >> out\\%put%\\%hello\\%%world%", true, "* 9-18 * * 1-5", "bob", "cat -n >> out%put", "%hello%\nworld\n", "cat", "-n >> out\\%put %\\%hello\\%%world%"},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.Input, func(t *testing.T) {
-			task, err := ParseTask("/etc/crontab", tt.Input, Environ{})
+		t.Run(fmt.Sprintf("%s/%v", tt.Input, tt.IncludeUser), func(t *testing.T) {
+			task, err := ParseTask("/etc/crontab", tt.Input, Environ{fmt.Sprintf("ENABLE_USER_COLUMN=%v", tt.IncludeUser)})
 			if err != nil {
 				t.Fatalf("failed to parse: %s", err)
 			}
@@ -126,35 +130,37 @@ func TestTask_Run(t *testing.T) {
 
 	if runtime.GOOS == "windows" {
 		tests = []RunTest{
-			{"*  @echo hello world", Environ{}, "hello world\r\n", 0},
-			{"*  @exit 1", Environ{}, "", 1},
-			{"*  @echo hello \\%SOMEONE\\%", Environ{"SOMEONE=world"}, "hello world\r\n", 0},
-			{"*  @echo \\%USER\\% \\%LOGNAME\\%", Environ{}, u.Username + " " + u.Username + "\r\n", 0},
-			{"*  @cd", Environ{"HOME=C:\\"}, "C:\\\r\n", 0},
-			{u.Username + "  @cd", Environ{}, u.HomeDir + "\r\n", 0},
-			{"*  echo $env:SHELL", Environ{"SHELL=powershell.exe"}, "powershell.exe\r\n", 0},
+			{"@echo hello world", Environ{}, "hello world\r\n", 0},
+			{"@exit 1", Environ{}, "", 1},
+			{"@echo hello \\%SOMEONE\\%", Environ{"SOMEONE=world"}, "hello world\r\n", 0},
+			{"@echo \\%USER\\% \\%LOGNAME\\%", Environ{}, u.Username + " " + u.Username + "\r\n", 0},
+			{"*  @echo \\%USER\\% \\%LOGNAME\\%", Environ{"ENABLE_USER_COLUMN=yes"}, u.Username + " " + u.Username + "\r\n", 0},
+			{"@cd", Environ{"HOME=C:\\"}, "C:\\\r\n", 0},
+			{u.Username + "  @cd", Environ{"ENABLE_USER_COLUMN=enable"}, u.HomeDir + "\r\n", 0},
+			{"echo $env:SHELL", Environ{"SHELL=powershell.exe"}, "powershell.exe\r\n", 0},
 		}
 	} else {
 		tests = []RunTest{
-			{"*  echo hello world", Environ{}, "hello world\n", 0},
-			{"*  exit 1", Environ{}, "", 1},
-			{"*  echo hello $someone", Environ{"someone=world"}, "hello world\n", 0},
-			{"*  echo $USER:$LOGNAME", Environ{}, u.Username + ":" + u.Username + "\n", 0},
-			{"*  pwd", Environ{"HOME=/"}, "/\n", 0},
-			{u.Username + "  pwd", Environ{}, u.HomeDir + "\n", 0},
-			{"*  {printf \"hello \\%s\\n\", $1}%awk%", Environ{"SHELL=awk", "SHELL_OPTS="}, "hello awk\n", 0},
-			{"*  10 13", Environ{"SHELL=seq", "SHELL_OPTS=", "PARSE_COMMAND=yes"}, "10\n11\n12\n13\n", 0},
+			{"echo hello world", Environ{}, "hello world\n", 0},
+			{"exit 1", Environ{}, "", 1},
+			{"echo hello $someone", Environ{"someone=world"}, "hello world\n", 0},
+			{"echo $USER:$LOGNAME", Environ{}, u.Username + ":" + u.Username + "\n", 0},
+			{"*  echo $USER:$LOGNAME", Environ{"ENABLE_USER_COLUMN=yes"}, u.Username + ":" + u.Username + "\n", 0},
+			{"pwd", Environ{"HOME=/"}, "/\n", 0},
+			{u.Username + "  pwd", Environ{"ENABLE_USER_COLUMN=enable"}, u.HomeDir + "\n", 0},
+			{"{printf \"hello \\%s\\n\", $1}%awk%", Environ{"SHELL=awk", "SHELL_OPTS="}, "hello awk\n", 0},
+			{"10 13", Environ{"SHELL=seq", "SHELL_OPTS=", "PARSE_COMMAND=yes"}, "10\n11\n12\n13\n", 0},
 		}
 		switch runtime.GOOS {
 		case "linux":
 			tests = append(
 				tests,
-				RunTest{"*  10 14", Environ{"SHELL=seq", "SHELL_OPTS=", "PARSE_COMMAND=no"}, "seq: invalid floating point argument: '10 14'\nTry 'seq --help' for more information.\n", 1},
+				RunTest{"10 14", Environ{"SHELL=seq", "SHELL_OPTS=", "PARSE_COMMAND=no"}, "seq: invalid floating point argument: '10 14'\nTry 'seq --help' for more information.\n", 1},
 			)
 		case "darwin":
 			tests = append(
 				tests,
-				RunTest{"*  10 14", Environ{"SHELL=seq", "SHELL_OPTS=", "PARSE_COMMAND=no"}, "seq: invalid floating point argument: 10 14\n", 2},
+				RunTest{"10 14", Environ{"SHELL=seq", "SHELL_OPTS=", "PARSE_COMMAND=no"}, "seq: invalid floating point argument: 10 14\n", 2},
 			)
 		}
 	}

@@ -113,3 +113,34 @@ func TestEnviron(t *testing.T) {
 	assertEmpty("hello", "")
 	assertEmpty("foo", "")
 }
+
+func TestEnviron_GetBool(t *testing.T) {
+	tests := []struct {
+		Key   string
+		Value string
+		Want  bool
+	}{
+		{"hello", "world", true},
+		{"hello", "", false},
+		{"hello", "yes", true},
+		{"hello", "No", false},
+		{"hello", "1", true},
+		{"hello", "0", false},
+		{"OPTION", "True", true},
+		{"OPTION", "FALSE", false},
+		{"OPTION", "ENABLE", true},
+		{"OPTION", "disable", false},
+		{"OPTION", "enabled", true},
+		{"OPTION", "disabled", false},
+	}
+
+	for _, tt := range tests {
+		input := fmt.Sprintf("%s=%s", tt.Key, tt.Value)
+		t.Run(input, func(t *testing.T) {
+			actual := (Environ{input}).GetBool(tt.Key)
+			if actual != tt.Want {
+				t.Errorf("expected %v but got %v", tt.Want, actual)
+			}
+		})
+	}
+}

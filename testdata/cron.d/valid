@@ -3,13 +3,13 @@
 SHELL = sh
 
 TZ = Asia/Tokyo
-@daily  root  echo hello
+@daily  echo hello
 
 TZ = UTC
-0 0 * * *  ec2-user  echo world
+0 0 * * *  echo world
 
 # duplicated task should be ignored
-0 0 * * *    ec2-user    echo  world
+0 0 * * *    echo  world
 
-TZ = "w h e r e ?"
+ENABLE_USER_COLUMN = yes
 @reboot   admin   cat%concron%initialized!

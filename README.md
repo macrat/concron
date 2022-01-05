@@ -28,7 +28,7 @@ services:
     environment:
       CRON_TZ: Asia/Tokyo
       CONCRON_CRONTAB: |
-        45 */3 * * *  *  docker run --rm busybox echo "you can do your task here!"
+        45 */3 * * *  docker run --rm busybox echo "you can do your task here!"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./cron-files:/etc/cron.d:ro
@@ -75,15 +75,32 @@ Crontab file is like below.
 SHELL=/bin/sh
 CRON_TZ=Asia/Tokyo
 
-#    schedule     user        command
-# |------------| |----| |-----------------|
-   */10 * * * *   root   echo your-command
-
-   @daily         *      echo another command
+#    schedule           command
+# |------------| |--------------------|
+   */10 * * * *   echo your-command
+   @daily         echo another command
 ```
 
-This file format is the same as common crontab with user name column.
-But there is single difference; you can use `*` as username that means execute on the same user as the execution user of Concron.
+This file format is the same as common crontab.
+
+But, there are two differences about the username column;
+
+1. The username column is omitted in default, regardless of the file path. If you want to change execution user, please set `yes` to `ENABLE_USER_COLUMN` of environment variables.
+2. You can omit the username using `*` instead of an actual username, even if you set `ENABLE_USER_COLUMN`.
+
+Tasks that omitted username, will be executed as the same user as the execution user of Concron.
+
+The crontab file that included username column is like below.
+
+``` crontab
+# This row is important!
+ENABLE_USER_COLUMN = yes
+
+#    schedule     user         command
+# |------------| |----| |--------------------|
+   */10 * * * *   root   echo your-command
+   @daily         *      echo another command
+```
 
 The container has users that have the same name as UID, 1000 to 1010.
 So you can use specify UID in crontab like `1000` as user name.
@@ -96,7 +113,7 @@ In below example, all tasks will executed in the docker container.
 
 ``` crontab
 # This is too long and ugly.
-0 0 * * *  *  /usr/bin/docker run --rm busybox echo hello world
+0 0 * * *  /usr/bin/docker run --rm busybox echo hello world
 
 
 # Use docker command as a shell.
@@ -105,10 +122,10 @@ SHELL_OPTS = run --rm
 PARSE_COMMAND = yes
 
 # This is short and cool!
-0 0 * * *  *  busybox echo hello world
+0 0 * * *  busybox echo hello world
 ```
 
-When the `PARSE_COMMAND` option in above example is enabled, Concron executes comannd as `"/usr/bin/docker" "run" "--rm" "busybox" "echo" "hello" "world"` instead of `"/usr/bin/docker" "run" "--rm" "busybox echo hello world"`.
+When the `PARSE_COMMAND` option in the above example is enabled, Concron executes comannd as `"/usr/bin/docker" "run" "--rm" "busybox" "echo" "hello" "world"` instead of `"/usr/bin/docker" "run" "--rm" "busybox echo hello world"`.
 This option is useful if you want to use non-shell program as `SHELL`.
 
 

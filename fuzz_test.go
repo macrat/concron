@@ -4,9 +4,8 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
-	"os"
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -36,7 +35,7 @@ func CheckTaskSanity(t *testing.T, task Task) {
 
 	task2, err := ParseTask(task.Source, s, task.Env)
 	if err != nil {
-		t.Fatalf("failed to parse output of String: %s", err)
+		t.Fatalf("failed to parse output of String: %#v: %s", s, err)
 	}
 
 	if !reflect.DeepEqual(task, task2) {
@@ -51,33 +50,22 @@ func CheckTaskSanity(t *testing.T, task Task) {
 	}
 }
 
-func FuzzParseTask(f *testing.F) {
-	file, err := os.Open("./testdata/cron.d/fuzz")
-	if err != nil {
-		f.Fatalf("failed to read initial data: %s", err)
-	}
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		f.Add(scanner.Text())
-	}
-
-	f.Fuzz(func(t *testing.T, spec string) {
-		task, err := ParseTask("/etc/crontab", spec, Environ{})
-		if err != nil {
-			return
-		}
-
-		CheckTaskSanity(t, task)
-	})
-}
-
 func FuzzParseCrontab(f *testing.F) {
 	for _, bs := range ReadAllTestCrontab(f) {
-		f.Add(bs)
+		for _, parseCommand := range []bool{true, false} {
+			for _, enableUserCommand := range []bool{true, false} {
+				f.Add(bs, parseCommand, enableUserCommand)
+			}
+		}
 	}
 
-	f.Fuzz(func(t *testing.T, input []byte) {
-		crontab, err := ParseCrontab("/etc/crontab", bytes.NewReader(input), Environ{})
+	f.Fuzz(func(t *testing.T, input []byte, parseCommand, enableUserCommand bool) {
+		env := Environ{
+			fmt.Sprintf("PARSE_COMMAND=%v", parseCommand),
+			fmt.Sprintf("ENABLE_USER_COMMAND=%v", enableUserCommand),
+		}
+
+		crontab, err := ParseCrontab("/etc/crontab", bytes.NewReader(input), env)
 		if err != nil {
 			return
 		}

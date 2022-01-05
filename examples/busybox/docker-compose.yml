@@ -9,9 +9,9 @@ services:
 
       # Tasks
       CONCRON_CRONTAB: |
-        #   schedule  | user | command
-          */5 * * * *    *     echo hello world
-          *   * * * *    *     date
+        #   schedule  | command
+          */5 * * * *   echo hello world
+          *   * * * *   date
     ports:
       - "8000:80"
     restart: always

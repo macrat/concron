@@ -109,9 +109,9 @@ func (e Environ) Get(key, defaultValue string) string {
 func (e Environ) GetBool(key string) bool {
 	v := e.Get(key, "")
 	switch strings.ToLower(v) {
-	case "true", "1", "yes", "enable":
-		return true
-	default:
+	case "", "false", "0", "no", "disable", "disabled":
 		return false
+	default:
+		return true
 	}
 }

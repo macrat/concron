@@ -84,10 +84,11 @@ func init() {
 		fmt.Println("  CONCRON_PATH        List of path to crontab files. (default: " + DefaultPath + ")")
 		fmt.Println("  CONCRON_LISTEN      Listen address of dashboard and metrics. (default: " + DefaultListen + ")")
 		fmt.Println("  CONCRON_LOGLEVEL    Log level. debug, info, warn, error, or fatal. (default: info)")
-		fmt.Println("  TZ                  Timezone for scheduling.")
+		fmt.Println("  CRON_TZ             Timezone for scheduling.")
 		fmt.Println("  SHELL               Path to shell to execute command. (default: " + DefaultShell + ")")
 		fmt.Println("  SHELL_OPTS          Path to shell to execute command. (default: " + DefaultShellOpts + ")")
-		fmt.Println("  PARSE_COMMAND       Parse command before pass to shell. \"yes\", \"true\", \"1\", \"enable\" to enable. (default: disable)")
+		fmt.Println("  PARSE_COMMAND       Parse command before pass to shell. (default: no)")
+		fmt.Println("  ENABLE_USER_COLUMN  Parse and use user column in the crontab file. (default: no)")
 	}
 }
 

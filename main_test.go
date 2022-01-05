@@ -38,13 +38,13 @@ func Test_reboot(t *testing.T) {
 	var crontabs []TestCrontab
 	if runtime.GOOS == "windows" {
 		crontabs = []TestCrontab{
-			{"crontab", "@reboot  *  echo hello world>\\%CONCRON_TEMP_DIR\\%/hello"},
-			{filepath.Join("cron.d", "a"), "SHELL=powershell.exe\r\n@reboot  " + u.Username + "  Write-Output \"this`r`nis`r`nA\" | Out-File -FilePath $env:CONCRON_TEMP_DIR/a -Encoding ascii -NoNewline"},
+			{"crontab", "@reboot  echo hello world>\\%CONCRON_TEMP_DIR\\%/hello"},
+			{filepath.Join("cron.d", "a"), "SHELL=powershell.exe\r\nENABLE_USER_COLUMN=yes\r\n@reboot  " + u.Username + "  Write-Output \"this`r`nis`r`nA\" | Out-File -FilePath $env:CONCRON_TEMP_DIR/a -Encoding ascii -NoNewline"},
 		}
 	} else {
 		crontabs = []TestCrontab{
-			{"crontab", "@reboot  *  echo hello world > $CONCRON_TEMP_DIR/hello"},
-			{filepath.Join("cron.d", "a"), "@reboot  " + u.Username + "  cat > $CONCRON_TEMP_DIR/a%this%is%A"},
+			{"crontab", "@reboot  echo hello world > $CONCRON_TEMP_DIR/hello"},
+			{filepath.Join("cron.d", "a"), "ENABLE_USER_COLUMN=yes\n@reboot  " + u.Username + "  cat > $CONCRON_TEMP_DIR/a%this%is%A"},
 		}
 	}
 	for _, tt := range crontabs {
