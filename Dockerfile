@@ -6,7 +6,7 @@ FROM golang:1.17 AS builder
 ARG VERSION=HEAD
 ARG COMMIT=unknown
 
-RUN apt update && apt install -y upx
+RUN apt-get update && apt-get install -y upx
 
 RUN mkdir -p /output/usr/bin /output/usr/share /output/etc && cp -r /usr/share/zoneinfo /output/usr/share/zoneinfo && ln -s /usr/share/zoneinfo/UTC /output/etc/localtime
 COPY ./assets/entrypoint.sh /output/entrypoint.sh
