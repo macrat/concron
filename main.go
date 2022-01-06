@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -55,8 +56,17 @@ func startServer(ctx context.Context, logStream zapcore.WriteSyncer, env Environ
 	}()
 
 	s := NewScheduler(ctx, sm)
-	cc := NewCrontabCollector(ctx, s, sm, pathes)
-	cc.Register(ctx)
+	NewCrontabCollector(ctx, s, sm, pathes).Register(ctx)
+
+	if envtab := env.Get("CONCRON_CRONTAB", ""); envtab != "" {
+		finish := sm.StartLoad("CONCRON_CRONTAB")
+		ct, err := ParseCrontab("CONCRON_CRONTAB", strings.NewReader(envtab), env)
+		finish(ct, err)
+		if err != nil {
+			return
+		}
+		s.RegisterCrontab(ct, true)
+	}
 
 	go s.Run()
 	<-ctx.Done()

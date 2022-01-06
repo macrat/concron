@@ -68,7 +68,7 @@ func Test_fulltest(t *testing.T) {
 
 	startServer(ctx, TestLogStream{t}, Environ{
 		"CONCRON_LOGLEVEL=debug",
-		"CONCRON_LISTEN=localhost:8000",
+		"CONCRON_LISTEN=localhost:0",
 		"CONCRON_PATH=" + cronPath,
 	})
 

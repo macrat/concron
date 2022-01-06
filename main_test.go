@@ -55,7 +55,7 @@ func Test_reboot(t *testing.T) {
 
 	startServer(ctx, TestLogStream{t}, Environ{
 		"CONCRON_LOGLEVEL=debug",
-		"CONCRON_LISTEN=localhost:8080",
+		"CONCRON_LISTEN=localhost:0",
 		"CONCRON_PATH=" + strings.Join([]string{
 			filepath.Join(dir, "crontab"),
 			filepath.Join(dir, "cron.d"),
@@ -80,5 +80,44 @@ func Test_reboot(t *testing.T) {
 		if string(bs) != tt.Content {
 			t.Errorf("unexpected content of %s\nexpected: %q\n but got: %q", tt.Path, tt.Content, string(bs))
 		}
+	}
+}
+
+func Test_CONCRON_CRONTAB(t *testing.T) {
+	timeout := 100 * time.Millisecond
+	if runtime.GOOS == "windows" {
+		timeout = 1 * time.Second
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	dir := t.TempDir()
+	env := Environ{
+		"CONCRON_LOGLEVEL=debug",
+		"CONCRON_LISTEN=localhost:0",
+		"CONCRON_PATH=" + strings.Join([]string{
+			filepath.Join(dir, "crontab"),
+			filepath.Join(dir, "cron.d"),
+		}, string(filepath.ListSeparator)),
+		"CONCRON_TEMP_DIR=" + dir,
+	}
+	if runtime.GOOS == "windows" {
+		env.Set(`CONCRON_CRONTAB=@reboot echo hello world > \%CONCRON_TEMP_DIR\%\hello`)
+	} else {
+		env.Set(`CONCRON_CRONTAB=@reboot echo hello world > $CONCRON_TEMP_DIR/hello`)
+	}
+
+	startServer(ctx, TestLogStream{t}, env)
+
+	bs, err := os.ReadFile(filepath.Join(dir, "hello"))
+	if err != nil {
+		t.Fatalf("failed to read output: %s", err)
+	}
+	expect := "hello world\n"
+	if runtime.GOOS == "windows" {
+		expect = strings.ReplaceAll(expect, "\n", "\r\n")
+	}
+	if string(bs) != expect {
+		t.Errorf("unexpected content of output\nexpected: %q\n but got: %q", expect, string(bs))
 	}
 }

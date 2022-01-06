@@ -29,6 +29,9 @@ type CrontabCollector struct {
 func NewCrontabCollector(ctx context.Context, s *Scheduler, sm *StatusMonitor, pathes []string) *CrontabCollector {
 	for i := range pathes {
 		pathes[i] = filepath.Clean(pathes[i])
+		if !filepath.IsAbs(pathes[i]) && pathes[i][0] != '.' {
+			pathes[i] = "." + string(filepath.Separator) + pathes[i]
+		}
 	}
 
 	sm.L().Info(
