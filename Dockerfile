@@ -23,7 +23,7 @@ FROM $BASE_IMAGE
 RUN for id in `seq 1000 1010`; do adduser -D -u $id -s /sbin/nologin -H -h / -g "" $id; done
 
 EXPOSE 80
-HEALTHCHECK CMD wget --spider http://localhost/livez || exit 1
+HEALTHCHECK CMD ["/usr/bin/concron", "-health-check"]
 
 COPY --from=builder /output /
 

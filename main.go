@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -22,13 +23,18 @@ var (
 	DefaultListen = ":8000"
 )
 
-func startServer(ctx context.Context, logStream zapcore.WriteSyncer, env Environ) (exitCode int) {
+func prepareLogger(logStream zapcore.WriteSyncer, env Environ) *zap.Logger {
 	var logLevel zapcore.Level
+
 	if err := logLevel.Set(env.Get("CONCRON_LOGLEVEL", "info")); err != nil {
 		NewLogger(os.Stdout, zap.InfoLevel).Fatal("unknown log level", zap.Error(err))
 	}
 
-	logger := NewLogger(logStream, logLevel)
+	return NewLogger(logStream, logLevel)
+}
+
+func startServer(ctx context.Context, logStream zapcore.WriteSyncer, env Environ) (exitCode int) {
+	logger := prepareLogger(logStream, env)
 
 	address := env.Get("CONCRON_LISTEN", DefaultListen)
 	pathes := filepath.SplitList(env.Get("CONCRON_PATH", "/etc/crontab:/etc/cron.d"))
@@ -104,23 +110,53 @@ func init() {
 	}
 }
 
+func runHealthCheck(logStream zapcore.WriteSyncer, env Environ) (exitCode int) {
+	listen := env.Get("CONCRON_LISTEN", DefaultListen)
+	logger := prepareLogger(logStream, env).With(zap.String("address", listen))
+
+	host, port, err := net.SplitHostPort(listen)
+	if err != nil {
+		logger.Error("invalid address", zap.Error(err))
+		return 1
+	}
+	if host == "" {
+		host = "localhost"
+	}
+
+	resp, err := http.Get("http://" + net.JoinHostPort(host, port) + "/livez")
+	if err != nil {
+		logger.Error("failed to communicate with server", zap.Error(err))
+		return 1
+	}
+	resp.Body.Close()
+
+	if resp.StatusCode == http.StatusOK {
+		logger.Info(resp.Status, zap.Int("code", resp.StatusCode))
+		return 0
+	} else {
+		logger.Error(resp.Status, zap.Int("code", resp.StatusCode))
+		return 1
+	}
+}
+
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
 	showHelp := flag.Bool("h", false, "Show help and exit.")
 	showVersion := flag.Bool("v", false, "Show version and exit.")
+	healthCheck := flag.Bool("health-check", false, "Check if Concron running healthy on CONCRON_LISTEN.")
 	flag.CommandLine.SetOutput(os.Stdout)
 	flag.Parse()
 
-	if *showHelp {
+	switch {
+	case *showHelp:
 		flag.Usage()
-		return
-	}
-	if *showVersion {
+	case *showVersion:
 		fmt.Printf("Concron %s (%s)\n", version, commit)
-		return
+	case *healthCheck:
+		runHealthCheck(os.Stdout, GetEnviron())
+	default:
+		os.Exit(startServer(ctx, os.Stdout, GetEnviron()))
 	}
-
-	os.Exit(startServer(ctx, os.Stdout, GetEnviron()))
 }
