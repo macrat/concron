@@ -22,7 +22,7 @@ var (
 	DefaultListen = ":8000"
 )
 
-func startServer(ctx context.Context, logStream zapcore.WriteSyncer, env Environ) {
+func startServer(ctx context.Context, logStream zapcore.WriteSyncer, env Environ) (exitCode int) {
 	var logLevel zapcore.Level
 	if err := logLevel.Set(env.Get("CONCRON_LOGLEVEL", "info")); err != nil {
 		NewLogger(os.Stdout, zap.InfoLevel).Fatal("unknown log level", zap.Error(err))
@@ -51,6 +51,7 @@ func startServer(ctx context.Context, logStream zapcore.WriteSyncer, env Environ
 		err := http.ListenAndServe(address, sm)
 		if err != nil {
 			logger.Fatal("http server", zap.String("address", address), zap.Error(err))
+			exitCode = 1
 		}
 		cancel()
 	}()
@@ -63,7 +64,7 @@ func startServer(ctx context.Context, logStream zapcore.WriteSyncer, env Environ
 		ct, err := ParseCrontab("CONCRON_CRONTAB", strings.NewReader(envtab), env)
 		finish(ct, err)
 		if err != nil {
-			return
+			return 2
 		}
 		s.RegisterCrontab(ct, true)
 	}
@@ -77,6 +78,8 @@ func startServer(ctx context.Context, logStream zapcore.WriteSyncer, env Environ
 	ctx2, cancel2 := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel2()
 	server.Shutdown(ctx2)
+
+	return
 }
 
 func init() {
@@ -119,5 +122,5 @@ func main() {
 		return
 	}
 
-	startServer(ctx, os.Stdout, GetEnviron())
+	os.Exit(startServer(ctx, os.Stdout, GetEnviron()))
 }

@@ -53,7 +53,7 @@ func Test_reboot(t *testing.T) {
 		}
 	}
 
-	startServer(ctx, TestLogStream{t}, Environ{
+	exitCode := startServer(ctx, TestLogStream{t}, Environ{
 		"CONCRON_LOGLEVEL=debug",
 		"CONCRON_LISTEN=localhost:0",
 		"CONCRON_PATH=" + strings.Join([]string{
@@ -61,6 +61,9 @@ func Test_reboot(t *testing.T) {
 			filepath.Join(dir, "cron.d"),
 		}, string(filepath.ListSeparator)),
 	})
+	if exitCode != 0 {
+		t.Fatalf("unexpected exit code: %d", exitCode)
+	}
 
 	outputs := []struct {
 		Path    string
