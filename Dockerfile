@@ -20,7 +20,11 @@ RUN upx --lzma /usr/src/concron/concron && cp /usr/src/concron/concron /output/u
 
 FROM $BASE_IMAGE
 
-RUN for id in `seq 1000 1010`; do adduser -D -u $id -s /sbin/nologin -H -h / -g "" $id; done
+RUN for id in `seq 1000 1010`; do \
+        echo "${id}:x:${id}:${id}::/:`which nologin`" >> /etc/passwd; \
+        echo "${id}:x:${id}:${id}" >> /etc/group; \
+        echo "${id}:*:::::::" >> /etc/shadow; \
+    done
 
 EXPOSE 80
 HEALTHCHECK CMD ["/usr/bin/concron", "-health-check"]
