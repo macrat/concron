@@ -102,7 +102,7 @@ func Test_CONCRON_CRONTAB(t *testing.T) {
 		"CONCRON_TEMP_DIR=" + dir,
 	}
 	if runtime.GOOS == "windows" {
-		env.Set(`CONCRON_CRONTAB=@reboot echo hello world > \%CONCRON_TEMP_DIR\%\hello`)
+		env.Set(`CONCRON_CRONTAB=@reboot echo hello world>\%CONCRON_TEMP_DIR\%\hello`)
 	} else {
 		env.Set(`CONCRON_CRONTAB=@reboot echo hello world > $CONCRON_TEMP_DIR/hello`)
 	}
