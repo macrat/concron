@@ -179,7 +179,7 @@ func TestTask_Run(t *testing.T) {
 			defer cancel()
 
 			r := TestTaskReporter{Logger: NewTestLogger(t)}
-			task.Job(ctx, &r).Run()
+			task.Run(ctx, &r)
 
 			if r.Output.String() != tt.Output {
 				t.Errorf("unexpected output\nexpected: %q\n but got: %q", tt.Output, r.Output)

@@ -101,13 +101,6 @@ func (t Task) Run(ctx context.Context, sm TaskReporter) {
 	finish(cmd.ProcessState.ExitCode(), err)
 }
 
-// Job returns cron.Job
-func (t Task) Job(ctx context.Context, sm TaskReporter) cron.Job {
-	return cron.FuncJob(func() {
-		t.Run(ctx, sm)
-	})
-}
-
 // EscapedStdin is Stdin but escaped % and \n.
 func (t Task) EscapedStdin() string {
 	return strings.ReplaceAll(strings.ReplaceAll(t.Stdin, "%", "\\%"), "\n", "%")

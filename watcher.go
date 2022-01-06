@@ -17,18 +17,18 @@ type CrontabWatcher struct {
 	Path    string
 	Monitor *StatusMonitor
 
-	cron        *cron.Cron
+	scheduler   *Scheduler
 	modtime     time.Time
 	size        int
 	entries     []cron.EntryID
 	observeTask cron.EntryID
 }
 
-func NewCrontabWatcher(ctx context.Context, c *cron.Cron, sm *StatusMonitor, path string, onReboot bool) (*CrontabWatcher, error) {
+func NewCrontabWatcher(ctx context.Context, s *Scheduler, sm *StatusMonitor, path string, onReboot bool) (*CrontabWatcher, error) {
 	w := &CrontabWatcher{
-		Path:    path,
-		Monitor: sm,
-		cron:    c,
+		Path:      path,
+		Monitor:   sm,
+		scheduler: s,
 	}
 	err := w.load(ctx, onReboot)
 	return w, err
@@ -62,31 +62,8 @@ func (w *CrontabWatcher) load(ctx context.Context, onReboot bool) error {
 		return err
 	}
 
-	for _, e := range w.entries {
-		w.cron.Remove(e)
-	}
-
-	w.entries = []cron.EntryID{}
-
-	l := w.Monitor.L().With(zap.String("path", w.Path))
-	l.Debug("loading")
-	for _, t := range ct.Tasks {
-		l.Debug(
-			"load",
-			zap.String("schedule", t.ScheduleSpec),
-			zap.String("user", t.User),
-			zap.String("command", t.Command),
-			zap.String("stdin", t.Stdin),
-		)
-
-		if t.IsReboot {
-			if onReboot {
-				go t.Run(ctx, w.Monitor)
-			}
-		} else {
-			w.entries = append(w.entries, w.cron.Schedule(t.Schedule, t.Job(ctx, w.Monitor)))
-		}
-	}
+	w.scheduler.Unregister(w.entries...)
+	w.entries = w.scheduler.RegisterCrontab(ct, onReboot)
 
 	finish(ct, nil)
 
@@ -97,7 +74,7 @@ func (w *CrontabWatcher) load(ctx context.Context, onReboot bool) error {
 // Register registers watcher task to observe crontab file's changes.
 // If the crontab file removed, the watcher automatically unregister itself.
 func (w *CrontabWatcher) Register(ctx context.Context) {
-	w.observeTask = w.cron.Schedule(ReloadSchedule{}, cron.FuncJob(func() {
+	w.observeTask = w.scheduler.RegisterFunc(ReloadSchedule{}, func() {
 		stat, err := os.Stat(w.Path)
 		if os.IsNotExist(err) {
 			w.Close()
@@ -110,7 +87,7 @@ func (w *CrontabWatcher) Register(ctx context.Context) {
 		if stat.ModTime().After(w.modtime) {
 			w.load(ctx, false)
 		}
-	}))
+	})
 }
 
 // Close unloads all task that registered via this watcher, and wait for to finish all tasks.
@@ -118,10 +95,8 @@ func (w *CrontabWatcher) Close() error {
 	w.Lock()
 	defer w.Unlock()
 
-	w.cron.Remove(w.observeTask)
-	for _, e := range w.entries {
-		w.cron.Remove(e)
-	}
+	w.scheduler.Unregister(w.observeTask)
+	w.scheduler.Unregister(w.entries...)
 	w.observeTask = 0
 
 	w.Monitor.Unloaded(w.Path)

@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/robfig/cron/v3"
 	"go.uber.org/zap"
 )
 
@@ -22,12 +21,12 @@ type CrontabCollector struct {
 
 	Monitor *StatusMonitor
 
-	cron       *cron.Cron
+	scheduler  *Scheduler
 	lastFounds []string
 }
 
 // NewCrontabCollector makes new CrontabCollector.
-func NewCrontabCollector(ctx context.Context, c *cron.Cron, sm *StatusMonitor, pathes []string) *CrontabCollector {
+func NewCrontabCollector(ctx context.Context, s *Scheduler, sm *StatusMonitor, pathes []string) *CrontabCollector {
 	for i := range pathes {
 		pathes[i] = filepath.Clean(pathes[i])
 	}
@@ -38,9 +37,9 @@ func NewCrontabCollector(ctx context.Context, c *cron.Cron, sm *StatusMonitor, p
 	)
 
 	cc := &CrontabCollector{
-		Pathes:  pathes,
-		Monitor: sm,
-		cron:    c,
+		Pathes:    pathes,
+		Monitor:   sm,
+		scheduler: s,
 	}
 	cc.searchAndLoad(ctx, true)
 	sm.FinishFirstLoad()
@@ -54,7 +53,7 @@ func (c *CrontabCollector) checkFile(ctx context.Context, path string, onReboot 
 		}
 	}
 
-	w, err := NewCrontabWatcher(ctx, c.cron, c.Monitor, path, onReboot)
+	w, err := NewCrontabWatcher(ctx, c.scheduler, c.Monitor, path, onReboot)
 	if err != nil {
 		return err
 	}
@@ -112,7 +111,7 @@ func (c *CrontabCollector) searchAndLoad(ctx context.Context, onReboot bool) {
 
 // Register registers collector task to look for crontab files and start CrontabWatcher if found.
 func (c *CrontabCollector) Register(ctx context.Context) {
-	c.cron.Schedule(ReloadSchedule{}, cron.FuncJob(func() {
+	c.scheduler.RegisterFunc(ReloadSchedule{}, func() {
 		c.searchAndLoad(ctx, false)
-	}))
+	})
 }

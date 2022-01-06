@@ -9,6 +9,7 @@ import (
 
 // Crontab is a set of Task.
 type Crontab struct {
+	Path  string
 	Tasks []Task
 }
 
@@ -30,7 +31,7 @@ func (c *Crontab) add(t Task) {
 
 // ParseCrontab parses crontab file.
 func ParseCrontab(path string, r io.Reader, env Environ) (Crontab, error) {
-	ct := Crontab{}
+	ct := Crontab{Path: path}
 
 	s := bufio.NewScanner(r)
 	ln := 0

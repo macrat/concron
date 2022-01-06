@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/robfig/cron/v3"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -55,15 +54,15 @@ func startServer(ctx context.Context, logStream zapcore.WriteSyncer, env Environ
 		cancel()
 	}()
 
-	c := cron.New(cron.WithLogger((*CronLogger)(logger)))
-	cc := NewCrontabCollector(ctx, c, sm, pathes)
+	s := NewScheduler(ctx, sm)
+	cc := NewCrontabCollector(ctx, s, sm, pathes)
 	cc.Register(ctx)
 
-	go c.Run()
+	go s.Run()
 	<-ctx.Done()
 
 	sm.StartTerminating()
-	<-c.Stop().Done()
+	<-s.Stop()
 
 	ctx2, cancel2 := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel2()
