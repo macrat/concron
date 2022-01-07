@@ -30,13 +30,10 @@ builds:
       - '-X main.commit={{ .ShortCommit }}'
 
 archives:
-  - format: tar.gz
+  - format: binary
     replacements:
       386: i386
       amd64: x86_64
-    format_overrides:
-      - goos: windows
-        format: zip
     files: [none*]
 
 changelog:

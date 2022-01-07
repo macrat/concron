@@ -43,7 +43,7 @@ More examples are in [examples directory](./examples).
 
 ### without container
 
-You can just start `crontab` command.
+You can get Concron binary from [releases page](https://github.com/macrat/concron/releases) and execute it.
 
 ``` shell
 $ export CONCRON_PATH=/etc/crontab:/etc/cron.d CONCRON_LISTEN=":8000"  # These are default values.
