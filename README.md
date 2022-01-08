@@ -43,12 +43,18 @@ More examples are in [examples directory](./examples).
 
 ### without container
 
-You can get Concron binary from [releases page](https://github.com/macrat/concron/releases) and execute it.
+You can get Concron binary from [releases page](https://github.com/macrat/concron/releases), or can install using below command.
+
+``` shell
+$ curl -sLf https://raw.github.com/macrat/concron/main/assets/install.sh | sh -
+```
+
+After install, you can execute `concron` command.
 
 ``` shell
 $ export CONCRON_PATH=/etc/crontab:/etc/cron.d CONCRON_LISTEN=":8000"  # These are default values.
 
-$ crontab
+$ concron
 ```
 
 
