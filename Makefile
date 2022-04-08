@@ -31,3 +31,7 @@ fulltest-only:
 	@echo WARNING: fulltest started. it takes very long time.
 	@echo
 	go test -v -cover -race -tags=fulltest -run=fulltest
+
+.PHONY: fuzz
+fuzz:
+	go test -fuzz . -fuzztime=5m
